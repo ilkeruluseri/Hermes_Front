@@ -8,8 +8,7 @@ export default defineConfig({
     allowedHosts: ['team-041.hackaton.sivas.edu.tr'],
     host: true,
     port: 8000,
-  },
-  proxy: {
+    proxy: {
       '/api': {
         target: 'http://localhost:3000',
         changeOrigin: true,
@@ -22,5 +21,6 @@ export default defineConfig({
         target: 'http://localhost:3000',
         changeOrigin: true,
       }
-    }
+  }
+  }
 })
