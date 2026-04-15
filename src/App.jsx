@@ -3,6 +3,8 @@ import Map, { Source, Layer } from 'react-map-gl/mapbox';
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
 
+const show_frontend = 0;
+
 export default function App() {
   // We store an array of route objects so the dispatcher can see multiple couriers
   const [routes, setRoutes] = useState([]);
@@ -10,7 +12,7 @@ export default function App() {
   // A function to call the backend we just built
   const fetchRoute = async () => {
     try {
-      const response = await fetch('http://127.0.0.1:8000/api/route/final', {
+      const response = await fetch('/api/route/final', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -41,6 +43,13 @@ export default function App() {
     fetchRoute();
   }, []);
 
+  if (show_frontend == 0) {
+    return (
+      <div style={{ width: '100vw', height: '100vh' }}>
+        I see you
+      </div>
+    )
+  }
   return (
     <div style={{ width: '100vw', height: '100vh' }}>
       <Map
