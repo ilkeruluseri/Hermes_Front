@@ -23,6 +23,7 @@ export default function App() {
       });
 
       if (response.ok) {
+        console.log(`Route fetched successfully: ${response}`);
         const data = await response.json();
         // Add the new route to our array of existing routes
         setRoutes(prevRoutes => [...prevRoutes, data]);
@@ -36,6 +37,7 @@ export default function App() {
 
   // Fetch a sample route when the component mounts
   useEffect(() => {
+    console.log("Fetching initial route...");
     fetchRoute();
   }, []);
 
