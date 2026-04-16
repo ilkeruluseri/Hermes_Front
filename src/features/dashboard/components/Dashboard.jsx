@@ -1,81 +1,20 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import './Dashboard.css';
 import MapViewer from './MapViewer';
 import CourierList from './CourierList';
 import PackageList from './PackageList';
-import { fetchFullRoute } from '../../../services/routeService';
-
-const ROUTE_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#aa3bff'];
+import { useRouteStore } from '../../../store/useRouteStore';
 
 export default function Dashboard() {
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  const [routes, setRoutes] = useState([]);
-  const [couriers, setCouriers] = useState([]);
-  const [packages, setPackages] = useState([]);
-  const [routeSummary, setRouteSummary] = useState(null);
-  const [explanation, setExplanation] = useState(null);
+  const { 
+    loading, error, fetchData, 
+    routes, couriers, packages, 
+    routeSummary, explanation 
+  } = useRouteStore();
 
   useEffect(() => {
-    const loadData = async () => {
-      try {
-        setLoading(true);
-        const data = await fetchFullRoute();
-
-        // 1. Parse Routes for MapViewer
-        if (data.vehicle_routes) {
-          const parsedRoutes = data.vehicle_routes.map((vr, index) => ({
-            id: `route-${vr.vehicle_id}`,
-            color: ROUTE_COLORS[index % ROUTE_COLORS.length],
-            geometry: vr.geometry ? {
-              type: 'Feature',
-              geometry: vr.geometry
-            } : null
-          })).filter(r => r.geometry != null);
-          setRoutes(parsedRoutes);
-
-          // 2. Parse Couriers
-          const parsedCouriers = data.vehicle_routes.map((vr, index) => {
-            const vehicleStops = (data.optimized_route || [])
-              .filter(stop => stop.vehicle_id === vr.vehicle_id)
-              .sort((a, b) => a.stop_sequence - b.stop_sequence);
-
-            return {
-              id: vr.vehicle_id,
-              name: `Courier ${vr.vehicle_id}`,
-              initials: `C${vr.vehicle_id}`,
-              currentStatus: vr.high_risk_stop_count > 0 ? 'At Risk' : 'En Route',
-              stopsRemaining: vr.stop_count,
-              routeColor: ROUTE_COLORS[index % ROUTE_COLORS.length],
-              stops: vehicleStops,
-              stats: {
-                totalExpectedDelay: vr.total_expected_delay_min,
-                severeStops: vr.severe_stop_count
-              }
-            };
-          });
-          setCouriers(parsedCouriers);
-        }
-
-        // 3. Parse Packages (Global Manifest)
-        if (data.optimized_route) {
-          setPackages(data.optimized_route);
-        }
-
-        // 4. Save Summary & Explanations
-        setRouteSummary(data.route_summary);
-        setExplanation(data.explanation);
-
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadData();
-  }, []);
+    fetchData();
+  }, [fetchData]);
 
   if (loading) {
     return (
