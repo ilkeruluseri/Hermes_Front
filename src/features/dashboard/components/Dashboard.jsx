@@ -79,15 +79,8 @@ export default function Dashboard() {
 
   return (
     <div className="dashboard-container">
-      <header className="dashboard-header glass-panel">
-        <div className="logo-container">
-          <div className="logo-icon">H</div>
-          <h1>Hermes Dispatcher OS</h1>
-        </div>
-        <div className="system-status">
-          <span className="status-indicator online"></span>
-          <span>System Online</span>
-        </div>
+      <header className="dashboard-page-header">
+        <h1>Live Dispatch Map</h1>
       </header>
 
       <main className="dashboard-main">
