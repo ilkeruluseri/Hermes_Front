@@ -1,81 +1,99 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './Dashboard.css';
 import MapViewer from './MapViewer';
 import CourierList from './CourierList';
 import PackageList from './PackageList';
+import { fetchFullRoute } from '../../../services/routeService';
 
-// Mock Data
-const MOCK_ROUTES = [
-  { 
-    id: 'route-1', 
-    color: '#3b82f6', // primary-accent
-    geometry: { 
-      type: 'Feature', 
-      geometry: { 
-        type: 'LineString', 
-        coordinates: [ 
-          [26.7644, 38.3229], // Urla
-          [26.8322, 38.3166], // Guzelbahce
-          [26.6388, 38.3188]  // IZTECH
-        ] 
-      } 
-    } 
-  },
-  { 
-    id: 'route-2', 
-    color: '#10b981', // success
-    geometry: { 
-      type: 'Feature', 
-      geometry: { 
-        type: 'LineString', 
-        coordinates: [ 
-          [26.7644, 38.3229], // Urla
-          [26.3060, 38.3235]  // Cesme roughly
-        ] 
-      } 
-    } 
-  }
-];
-
-const MOCK_COURIERS = [
-  { 
-    id: 1, 
-    name: 'Alex Johnson', 
-    initials: 'AJ', 
-    currentStatus: 'En Route', 
-    stopsRemaining: 2, 
-    routeColor: '#3b82f6', 
-    stops: [ 
-      { name: 'Urla Center', eta: '10:30 AM', completed: true }, 
-      { name: 'Güzelbahçe', eta: '11:15 AM', completed: false }, 
-      { name: 'IZTECH Campus', eta: '12:00 PM', completed: false } 
-    ] 
-  },
-  { 
-    id: 2, 
-    name: 'Sarah Demir', 
-    initials: 'SD', 
-    currentStatus: 'Approaching', 
-    stopsRemaining: 1, 
-    routeColor: '#10b981', 
-    stops: [ 
-      { name: 'Cesme Marina', eta: '1:00 PM', completed: false } 
-    ] 
-  }
-];
-
-const MOCK_PACKAGES = [
-  { id: 'PKG-1001', origin: 'Warehouse A', destination: 'Güzelbahçe', courierName: 'Alex Johnson', eta: '11:15 AM', status: 'In Transit' },
-  { id: 'PKG-1002', origin: 'Warehouse A', destination: 'IZTECH Campus', courierName: 'Alex Johnson', eta: '12:00 PM', status: 'In Transit' },
-  { id: 'PKG-1003', origin: 'Hub 2', destination: 'Cesme Marina', courierName: 'Sarah Demir', eta: '1:00 PM', status: 'In Transit' },
-  { id: 'PKG-1004', origin: 'Hub 1', destination: 'Urla Center', courierName: 'Alex Johnson', eta: '10:30 AM', status: 'Delivered' },
-  { id: 'PKG-1005', origin: 'Warehouse B', destination: 'Urla Center', courierName: 'Unassigned', eta: 'Pending', status: 'Pending' }
-];
+const ROUTE_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#aa3bff'];
 
 export default function Dashboard() {
-  const [routes] = useState(MOCK_ROUTES);
-  const [couriers] = useState(MOCK_COURIERS);
-  const [packages] = useState(MOCK_PACKAGES);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const [routes, setRoutes] = useState([]);
+  const [couriers, setCouriers] = useState([]);
+  const [packages, setPackages] = useState([]);
+  const [routeSummary, setRouteSummary] = useState(null);
+  const [explanation, setExplanation] = useState(null);
+
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        setLoading(true);
+        const data = await fetchFullRoute();
+
+        // 1. Parse Routes for MapViewer
+        if (data.vehicle_routes) {
+          const parsedRoutes = data.vehicle_routes.map((vr, index) => ({
+            id: `route-${vr.vehicle_id}`,
+            color: ROUTE_COLORS[index % ROUTE_COLORS.length],
+            geometry: vr.geometry ? {
+              type: 'Feature',
+              geometry: vr.geometry
+            } : null
+          })).filter(r => r.geometry != null);
+          setRoutes(parsedRoutes);
+
+          // 2. Parse Couriers
+          const parsedCouriers = data.vehicle_routes.map((vr, index) => {
+            const vehicleStops = (data.optimized_route || [])
+              .filter(stop => stop.vehicle_id === vr.vehicle_id)
+              .sort((a, b) => a.stop_sequence - b.stop_sequence);
+
+            return {
+              id: vr.vehicle_id,
+              name: `Courier ${vr.vehicle_id}`,
+              initials: `C${vr.vehicle_id}`,
+              currentStatus: vr.high_risk_stop_count > 0 ? 'At Risk' : 'En Route',
+              stopsRemaining: vr.stop_count,
+              routeColor: ROUTE_COLORS[index % ROUTE_COLORS.length],
+              stops: vehicleStops,
+              stats: {
+                totalExpectedDelay: vr.total_expected_delay_min,
+                severeStops: vr.severe_stop_count
+              }
+            };
+          });
+          setCouriers(parsedCouriers);
+        }
+
+        // 3. Parse Packages (Global Manifest)
+        if (data.optimized_route) {
+          setPackages(data.optimized_route);
+        }
+
+        // 4. Save Summary & Explanations
+        setRouteSummary(data.route_summary);
+        setExplanation(data.explanation);
+
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadData();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="dashboard-container center-content">
+        <div className="loader"></div>
+        <p>Loading Optimization Data...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="dashboard-container center-content error-state">
+        <p>Error loading data: {error}</p>
+        <button className="retry-btn" onClick={() => window.location.reload()}>Retry</button>
+      </div>
+    );
+  }
 
   return (
     <div className="dashboard-container">
@@ -84,6 +102,46 @@ export default function Dashboard() {
       </header>
 
       <main className="dashboard-main">
+        {/* Explanation Banner */}
+        {explanation && explanation.overall_assessment && (
+          <section className="dashboard-explanation glass-panel">
+            <div className="explanation-header">
+              <span className="ai-icon">✨</span>
+              <h3>AI Assessment</h3>
+            </div>
+            <p>{explanation.overall_assessment}</p>
+            {explanation.recommendations && explanation.recommendations.length > 0 && (
+              <ul className="recommendations-list">
+                {explanation.recommendations.map((rec, i) => (
+                  <li key={i}>{rec}</li>
+                ))}
+              </ul>
+            )}
+          </section>
+        )}
+
+        {/* Global KPIs */}
+        {routeSummary && (
+          <section className="dashboard-kpis">
+            <div className="small-kpi-card">
+              <span className="label">Overall Risk Score</span>
+              <span className="value">{routeSummary.overall_risk_score}</span>
+            </div>
+            <div className="small-kpi-card">
+              <span className="label">Total Expected Delay</span>
+              <span className="value">{routeSummary.expected_total_delay_min} min</span>
+            </div>
+            <div className="small-kpi-card">
+              <span className="label">Severe Stops</span>
+              <span className="value text-danger">{routeSummary.severe_stop_count}</span>
+            </div>
+            <div className="small-kpi-card">
+              <span className="label">VRP Status</span>
+              <span className="value">{routeSummary.vrp_status}</span>
+            </div>
+          </section>
+        )}
+
         <section className="dashboard-map-section">
           <MapViewer routes={routes} />
         </section>

@@ -4,12 +4,11 @@ import './PackageList.css';
 export default function PackageList({ packages }) {
   const [searchTerm, setSearchTerm] = useState('');
 
-  const filteredPackages = packages.filter(pkg => 
-    pkg.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    pkg.origin.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    pkg.destination.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    pkg.courierName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    pkg.status.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredPackages = (packages || []).filter(pkg => 
+    (pkg.stop_id && pkg.stop_id.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (pkg.stop_name && pkg.stop_name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (pkg.risk_level && pkg.risk_level.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (pkg.severity && pkg.severity.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   return (
@@ -22,7 +21,7 @@ export default function PackageList({ packages }) {
           </svg>
           <input 
             type="text" 
-            placeholder="Search manifests, origins, destinations, couriers..." 
+            placeholder="Search stops, IDs, risk levels..." 
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -33,30 +32,34 @@ export default function PackageList({ packages }) {
         <table className="package-table">
           <thead>
             <tr>
-              <th>Tracking ID</th>
-              <th>Origin</th>
-              <th>Destination</th>
-              <th>Courier</th>
-              <th>ETA</th>
-              <th>Status</th>
+              <th>Stop ID</th>
+              <th>Stop Name</th>
+              <th>Assigned Courier</th>
+              <th>Expected Delay</th>
+              <th>Risk Level</th>
+              <th>Severity</th>
             </tr>
           </thead>
           <tbody>
             {filteredPackages.length > 0 ? (
-              filteredPackages.map(pkg => (
-                <tr key={pkg.id}>
-                  <td className="font-mono">{pkg.id}</td>
-                  <td>{pkg.origin}</td>
-                  <td>{pkg.destination}</td>
+              filteredPackages.map((pkg, idx) => (
+                <tr key={pkg.stop_id || idx}>
+                  <td className="font-mono">{pkg.stop_id || `STOP-${idx}`}</td>
+                  <td>{pkg.stop_name}</td>
                   <td>
-                    <span className={`courier-chip ${pkg.courierName === 'Unassigned' ? 'unassigned' : ''}`}>
-                      {pkg.courierName}
+                    <span className="courier-chip">Courier {pkg.vehicle_id}</span>
+                  </td>
+                  <td className={`eta-cell ${pkg.expected_delay_min > 0 ? 'text-warning' : 'text-success'}`}>
+                    {pkg.expected_delay_min > 0 ? `${pkg.expected_delay_min} min` : 'On Time'}
+                  </td>
+                  <td>
+                    <span className={`status-badge status-${pkg.risk_level === 'high' ? 'pending' : (pkg.risk_level === 'low' ? 'delivered' : 'in-transit')}`}>
+                      {pkg.risk_level}
                     </span>
                   </td>
-                  <td className="eta-cell">{pkg.eta}</td>
                   <td>
-                    <span className={`status-badge status-${pkg.status.toLowerCase().replace(' ', '-')}`}>
-                      {pkg.status}
+                    <span className={`status-badge ${pkg.severity === 'severe' ? 'status-unassigned border-danger text-danger' : 'status-in-transit'}`}>
+                      {pkg.severity}
                     </span>
                   </td>
                 </tr>
@@ -64,7 +67,7 @@ export default function PackageList({ packages }) {
             ) : (
               <tr>
                 <td colSpan="6" className="no-results">
-                  No packages found matching "{searchTerm}"
+                  No stops found matching "{searchTerm}"
                 </td>
               </tr>
             )}

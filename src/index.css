@@ -69,3 +69,11 @@ h1, h2, h3, h4, h5, h6, p {
 ::-webkit-scrollbar-thumb:hover {
   background: var(--text-tertiary);
 }
+
+/* Global Utilities */
+.text-primary { color: var(--primary-accent); }
+.text-danger { color: var(--danger); font-weight: 600; }
+.text-warning { color: var(--warning); font-weight: 600; }
+.text-success { color: var(--success); font-weight: 600; }
+.border-danger { border: 1px solid var(--danger) !important; box-shadow: 0 4px 20px rgba(239, 68, 68, 0.2) !important; }
+
