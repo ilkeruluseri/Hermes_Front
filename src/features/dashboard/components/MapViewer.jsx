@@ -9,8 +9,8 @@ export default function MapViewer({ routes }) {
     <div className="map-viewer-container">
       <Map
         initialViewState={{
-          longitude: 26.7644, // Centered near Urla
-          latitude: 38.3229,
+          longitude: 37.0150, // Centered near Urla
+          latitude: 39.7505,
           zoom: 11
         }}
         mapStyle="mapbox://styles/mapbox/dark-v11" 
