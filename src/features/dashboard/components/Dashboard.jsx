@@ -9,7 +9,8 @@ export default function Dashboard() {
   const { 
     loading, error, fetchData, 
     routes, couriers, packages, 
-    routeSummary, explanation 
+    routeSummary, explanation,
+    selectedCourierId, setSelectedCourier
   } = useRouteStore();
 
   useEffect(() => {
@@ -82,12 +83,12 @@ export default function Dashboard() {
         )}
 
         <section className="dashboard-map-section">
-          <MapViewer routes={routes} />
+          <MapViewer routes={routes} selectedCourierId={selectedCourierId} />
         </section>
 
         <section className="dashboard-couriers-section">
           <h2 className="section-title">Active Fleet</h2>
-          <CourierList couriers={couriers} />
+          <CourierList couriers={couriers} selectedCourierId={selectedCourierId} onSelectCourier={setSelectedCourier} />
         </section>
 
         <section className="dashboard-packages-section">
