@@ -13,6 +13,11 @@ export const useRouteStore = create((set, get) => ({
   packages: [],
   routeSummary: null,
   explanation: null,
+  selectedCourierId: null,
+
+  setSelectedCourier: (id) => set((state) => ({
+    selectedCourierId: state.selectedCourierId === id ? null : id
+  })),
 
   fetchData: async () => {
     // If we already successfully fetched data, don't refetch automatically
@@ -29,20 +34,52 @@ export const useRouteStore = create((set, get) => ({
 
       // 1. Parse Routes for MapViewer
       if (data.vehicle_routes) {
-        parsedRoutes = data.vehicle_routes.map((vr, index) => ({
-          id: `route-${vr.vehicle_id}`,
-          color: ROUTE_COLORS[index % ROUTE_COLORS.length],
-          geometry: vr.geometry ? {
-            type: 'Feature',
-            geometry: vr.geometry
-          } : null
-        })).filter(r => r.geometry != null);
+        parsedRoutes = data.vehicle_routes.map((vr, index) => {
+          let naiveGeometry = null;
+          let currentPosition = null;
+          let vehicleType = 'car';
+          const vehicleTypes = ['car', 'truck', 'motorcycle'];
+
+          if (vr.geometry && vr.geometry.coordinates && vr.geometry.coordinates.length > 0) {
+            const coords = vr.geometry.coordinates;
+            // Mock naive geometry as a straight line from first point to last point
+            naiveGeometry = {
+              type: 'LineString',
+              coordinates: [coords[0], coords[coords.length - 1]]
+            };
+
+            // Mock current position somewhere in the middle of the route
+            currentPosition = coords[Math.floor(coords.length / 2)];
+            vehicleType = vehicleTypes[index % vehicleTypes.length];
+          }
+
+          return {
+            id: `route-${vr.vehicle_id}`,
+            vehicle_id: vr.vehicle_id,
+            color: ROUTE_COLORS[index % ROUTE_COLORS.length],
+            geometry: vr.geometry ? {
+              type: 'Feature',
+              geometry: vr.geometry
+            } : null,
+            naiveGeometry: naiveGeometry ? {
+              type: 'Feature',
+              geometry: naiveGeometry
+            } : null,
+            currentPosition,
+            vehicleType
+          };
+        }).filter(r => r.geometry != null);
 
         // 2. Parse Couriers
         parsedCouriers = data.vehicle_routes.map((vr, index) => {
           const vehicleStops = (data.optimized_route || [])
             .filter(stop => stop.vehicle_id === vr.vehicle_id)
             .sort((a, b) => a.stop_sequence - b.stop_sequence);
+
+          // Mock optimization metrics
+          const timeSavedMin = Math.floor(Math.random() * 45) + 15; // 15 to 60 mins
+          const distanceSavedKm = (Math.random() * 10 + 2).toFixed(1); // 2.0 to 12.0 km
+          const moneySaved = (distanceSavedKm * 1.5 + timeSavedMin * 0.5).toFixed(2); // Mock formula
 
           return {
             id: vr.vehicle_id,
@@ -55,6 +92,11 @@ export const useRouteStore = create((set, get) => ({
             stats: {
               totalExpectedDelay: vr.total_expected_delay_min,
               severeStops: vr.severe_stop_count
+            },
+            optimizationMetrics: {
+              timeSavedMin,
+              distanceSavedKm,
+              moneySaved
             }
           };
         });

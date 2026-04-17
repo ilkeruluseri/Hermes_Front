@@ -60,13 +60,13 @@ export default function AnalyticsDashboard() {
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={onTimeData} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-                  <XAxis dataKey="name" stroke="#94a3b8" />
-                  <YAxis stroke="#94a3b8" domain={[80, 100]} />
+                  <XAxis dataKey="name" stroke="var(--text-secondary)" />
+                  <YAxis stroke="var(--text-secondary)" domain={[80, 100]} />
                   <Tooltip
-                    contentStyle={{ backgroundColor: '#1a1e2d', borderColor: 'rgba(255,255,255,0.1)', color: '#fff' }}
-                    itemStyle={{ color: '#fff' }}
+                    contentStyle={{ backgroundColor: 'var(--surface-color)', borderColor: 'var(--border-color)', color: 'var(--text-primary)' }}
+                    itemStyle={{ color: 'var(--text-primary)' }}
                   />
-                  <Line type="monotone" dataKey="rate" stroke="#3b82f6" strokeWidth={3} dot={{ r: 6, fill: '#3b82f6', strokeWidth: 2, stroke: '#1a1e2d' }} activeDot={{ r: 8 }} />
+                  <Line type="monotone" dataKey="rate" stroke="var(--primary-accent)" strokeWidth={3} dot={{ r: 6, fill: 'var(--primary-accent)', strokeWidth: 2, stroke: 'var(--surface-color)' }} activeDot={{ r: 8 }} />
                 </LineChart>
               </ResponsiveContainer>
             </div>
@@ -78,14 +78,14 @@ export default function AnalyticsDashboard() {
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={courierPerformanceData} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-                  <XAxis dataKey="name" stroke="#94a3b8" />
-                  <YAxis stroke="#94a3b8" />
+                  <XAxis dataKey="name" stroke="var(--text-secondary)" />
+                  <YAxis stroke="var(--text-secondary)" />
                   <Tooltip
-                    contentStyle={{ backgroundColor: '#1a1e2d', borderColor: 'rgba(255,255,255,0.1)', color: '#fff' }}
+                    contentStyle={{ backgroundColor: 'var(--surface-color)', borderColor: 'var(--border-color)', color: 'var(--text-primary)' }}
                   />
                   <Legend wrapperStyle={{ paddingTop: '20px' }} />
-                  <Bar dataKey="deliveries" fill="#64748b" name="Total Deliveries" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="onTime" fill="#10b981" name="On Time" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="deliveries" fill="var(--text-tertiary)" name="Total Deliveries" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="onTime" fill="var(--success)" name="On Time" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
