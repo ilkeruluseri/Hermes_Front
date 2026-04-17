@@ -32,7 +32,7 @@ export default function MapViewer({ routes }) {
                 'line-cap': 'round'
               }}
               paint={{
-                'line-color': routeData.color || '#3b82f6', 
+                'line-color': routeData.color || '#eb5647', 
                 'line-width': 5,
                 'line-opacity': 0.8
               }}
