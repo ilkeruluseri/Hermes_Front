@@ -6,16 +6,21 @@ import PackageList from './PackageList';
 import { useRouteStore } from '../../../store/useRouteStore';
 
 export default function Dashboard() {
-  const { 
-    loading, error, fetchData, 
-    routes, couriers, packages, 
+  const {
+    loading, error, fetchData,
+    routes, couriers, packages,
     routeSummary, explanation,
-    selectedCourierId, setSelectedCourier
+    selectedCourierId, setSelectedCourier, hasFetched,
+    startSimulation, stopSimulation, wsConnected,
+    liveCouriers, isConnecting
   } = useRouteStore();
 
   useEffect(() => {
     fetchData();
-  }, [fetchData]);
+    return () => stopSimulation();
+  }, [fetchData, stopSimulation]);
+
+  const activeCouriersList = Object.values(liveCouriers);
 
   if (loading) {
     return (
@@ -39,27 +44,49 @@ export default function Dashboard() {
     <div className="dashboard-container">
       <header className="dashboard-page-header">
         <h1>Live Dispatch Map</h1>
+
+        {/* --- SIMULATION CONTROLS --- */}
+        <div className="simulation-controls" style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+          <span style={{ fontWeight: 'bold', color: wsConnected ? '#10b981' : (isConnecting ? '#f59e0b' : '#ef4444') }}>
+            {wsConnected ? '🟢 Live' : (isConnecting ? '🟡 Connecting...' : '🔴 Offline')}
+          </span>
+          <button
+            onClick={startSimulation}
+            // Disable the button if we are connected OR currently trying to connect
+            disabled={!hasFetched || wsConnected || isConnecting}
+            style={{
+              padding: '8px 16px',
+              background: '#10b981',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: (wsConnected || isConnecting) ? 'not-allowed' : 'pointer',
+              opacity: (wsConnected || isConnecting) ? 0.6 : 1
+            }}
+          >
+            {isConnecting ? 'Starting...' : '▶ Start Sim'}
+          </button>
+
+          <button
+            onClick={stopSimulation}
+            disabled={!wsConnected && !isConnecting}
+            style={{
+              padding: '8px 16px',
+              background: '#ef4444',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: (!wsConnected && !isConnecting) ? 'not-allowed' : 'pointer',
+              opacity: (!wsConnected && !isConnecting) ? 0.6 : 1
+            }}
+          >
+            ■ Stop Sim
+          </button>
+        </div>
+
       </header>
 
       <main className="dashboard-main">
-        {/* Explanation Banner */}
-        {explanation && explanation.overall_assessment && (
-          <section className="dashboard-explanation glass-panel">
-            <div className="explanation-header">
-              <span className="ai-icon">✨</span>
-              <h3>AI Assessment</h3>
-            </div>
-            <p>{explanation.overall_assessment}</p>
-            {explanation.recommendations && explanation.recommendations.length > 0 && (
-              <ul className="recommendations-list">
-                {explanation.recommendations.map((rec, i) => (
-                  <li key={i}>{rec}</li>
-                ))}
-              </ul>
-            )}
-          </section>
-        )}
-
         {/* Global KPIs */}
         {routeSummary && (
           <section className="dashboard-kpis">
@@ -82,14 +109,18 @@ export default function Dashboard() {
           </section>
         )}
 
-        <section className="dashboard-map-section">
-          <MapViewer routes={routes} selectedCourierId={selectedCourierId} />
-        </section>
+        <div className="map-and-fleet-container">
+          <section className="dashboard-map-section">
+            <MapViewer routes={routes} selectedCourierId={selectedCourierId} liveCouriers={activeCouriersList} />
+          </section>
 
-        <section className="dashboard-couriers-section">
-          <h2 className="section-title">Active Fleet</h2>
-          <CourierList couriers={couriers} selectedCourierId={selectedCourierId} onSelectCourier={setSelectedCourier} />
-        </section>
+          <section className="dashboard-couriers-section">
+            <h2 className="section-title">Active Fleet</h2>
+            <div className="fleet-scroll-area">
+              <CourierList couriers={couriers} selectedCourierId={selectedCourierId} onSelectCourier={setSelectedCourier} />
+            </div>
+          </section>
+        </div>
 
         <section className="dashboard-packages-section">
           <h2 className="section-title">Global Manifest</h2>
