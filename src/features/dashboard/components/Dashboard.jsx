@@ -10,13 +10,14 @@ export default function Dashboard() {
     loading, error, fetchData,
     routes, couriers, packages,
     routeSummary, explanation,
-    selectedCourierId, setSelectedCourier, hasFetched,
-    startSimulation, stopSimulation, wsConnected,
-    liveCouriers, isConnecting
+    selectedCourierId, setSelectedCourier, 
+    startSimulation, stopSimulation, nextTimeStep,
+    liveCouriers, simulationActive, isStarting, isStepping
   } = useRouteStore();
 
   useEffect(() => {
     fetchData();
+    // No automatic start, user will click "Start Simulation"
     return () => stopSimulation();
   }, [fetchData, stopSimulation]);
 
@@ -47,43 +48,55 @@ export default function Dashboard() {
 
         {/* --- SIMULATION CONTROLS --- */}
         <div className="simulation-controls" style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-          <span style={{ fontWeight: 'bold', color: wsConnected ? '#10b981' : (isConnecting ? '#f59e0b' : '#ef4444') }}>
-            {wsConnected ? '🟢 Live' : (isConnecting ? '🟡 Connecting...' : '🔴 Offline')}
-          </span>
-          <button
-            onClick={startSimulation}
-            // Disable the button if we are connected OR currently trying to connect
-            disabled={!hasFetched || wsConnected || isConnecting}
-            style={{
-              padding: '8px 16px',
-              background: '#10b981',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: (wsConnected || isConnecting) ? 'not-allowed' : 'pointer',
-              opacity: (wsConnected || isConnecting) ? 0.6 : 1
-            }}
-          >
-            {isConnecting ? 'Starting...' : '▶ Start Sim'}
-          </button>
-
-          <button
-            onClick={stopSimulation}
-            disabled={!wsConnected && !isConnecting}
-            style={{
-              padding: '8px 16px',
-              background: '#ef4444',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: (!wsConnected && !isConnecting) ? 'not-allowed' : 'pointer',
-              opacity: (!wsConnected && !isConnecting) ? 0.6 : 1
-            }}
-          >
-            ■ Stop Sim
-          </button>
+          {!simulationActive ? (
+            <button
+              onClick={startSimulation}
+              disabled={isStarting}
+              style={{
+                padding: '8px 16px',
+                background: 'var(--primary-accent)',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: isStarting ? 'not-allowed' : 'pointer',
+                opacity: isStarting ? 0.7 : 1
+              }}
+            >
+              {isStarting ? 'Initializing...' : 'Start Simulation'}
+            </button>
+          ) : (
+            <>
+              <button
+                onClick={nextTimeStep}
+                disabled={isStepping}
+                style={{
+                  padding: '8px 16px',
+                  background: '#10B981', // Success green
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: isStepping ? 'not-allowed' : 'pointer',
+                  opacity: isStepping ? 0.7 : 1
+                }}
+              >
+                {isStepping ? 'Smoothing...' : 'Next Time Step'}
+              </button>
+              <button
+                onClick={stopSimulation}
+                style={{
+                  padding: '8px 16px',
+                  background: 'rgba(255,255,255,0.1)',
+                  color: 'white',
+                  border: '1px solid rgba(255,255,255,0.2)',
+                  borderRadius: '4px',
+                  cursor: 'pointer'
+                }}
+              >
+                Reset
+              </button>
+            </>
+          )}
         </div>
-
       </header>
 
       <main className="dashboard-main">
