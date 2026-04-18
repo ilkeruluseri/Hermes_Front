@@ -13,10 +13,15 @@ const renderCourierIcon = (type) => {
   }
 };
 
-export default function MapViewer({ routes, selectedCourierId }) {
+export default function MapViewer({ routes, selectedCourierId, liveCouriers }) {
   const routesToRender = selectedCourierId !== null
     ? routes.filter(r => r.id === `route-${selectedCourierId}` || r.vehicle_id === selectedCourierId)
     : routes;
+
+  // 2. Filter live markers so they disappear if another courier is selected
+  const liveCouriersToRender = selectedCourierId !== null
+    ? liveCouriers.filter(c => c.vehicle_id === selectedCourierId)
+    : liveCouriers;
 
   const naiveRouteToRender = selectedCourierId !== null
     ? routes.find(r => r.id === `route-${selectedCourierId}` || r.vehicle_id === selectedCourierId)?.naiveGeometry
@@ -26,7 +31,7 @@ export default function MapViewer({ routes, selectedCourierId }) {
     <div className="map-viewer-container">
       <Map
         initialViewState={{
-          longitude: 37.0150, // Centered near Urla
+          longitude: 37.0150,
           latitude: 39.7505,
           zoom: 11
         }}
@@ -79,19 +84,63 @@ export default function MapViewer({ routes, selectedCourierId }) {
               </Marker>
             ))}
 
-            {routeData.currentPosition && (
-              <Marker
-                longitude={routeData.currentPosition[0]}
-                latitude={routeData.currentPosition[1]}
-                anchor="center"
-              >
-                <div className="courier-marker" style={{ borderColor: routeData.color || 'var(--primary-accent)' }}>
-                  {renderCourierIcon(routeData.vehicleType)}
-                </div>
-              </Marker>
-            )}
+            {liveCouriersToRender.map((courier) => {
+              // Attempt to find the matching static route to grab the specific vehicleType (car/truck/etc)
+              const matchingRoute = routes.find(r => r.vehicle_id === courier.vehicle_id);
+              const vType = matchingRoute ? matchingRoute.vehicleType : 'car';
+
+              return (
+                <Marker
+                  key={`live-${courier.courier_id}`}
+                  longitude={courier.location[0]}
+                  latitude={courier.location[1]}
+                  anchor="center"
+                  style={{ transition: 'transform 0.5s linear' }} // Adds smooth gliding between WS ticks
+                >
+                  <div
+                    className="courier-marker"
+                    style={{
+                      borderColor: courier.color || 'var(--primary-accent)',
+                      // Optional: if you switch to a top-down icon, you can rotate it with the heading!
+                      // transform: `rotate(${courier.heading}deg)` 
+                    }}
+                    title={`${courier.name} - ${courier.speed_kmh} km/h`}
+                  >
+                    {renderCourierIcon(vType)}
+                  </div>
+                </Marker>
+              );
+            })}
           </React.Fragment>
         ))}
+
+        {liveCouriersToRender.map((courier) => {
+          // Attempt to find the matching static route to grab the specific vehicleType (car/truck/etc)
+          const matchingRoute = routes.find(r => r.vehicle_id === courier.vehicle_id);
+          const vType = matchingRoute ? matchingRoute.vehicleType : 'car';
+
+          return (
+            <Marker
+              key={`live-${courier.courier_id}`}
+              longitude={courier.location[0]}
+              latitude={courier.location[1]}
+              anchor="center"
+              style={{ transition: 'transform 0.5s linear' }} // Adds smooth gliding between WS ticks
+            >
+              <div
+                className="courier-marker"
+                style={{
+                  borderColor: courier.color || 'var(--primary-accent)',
+                  // Optional: if you switch to a top-down icon, you can rotate it with the heading!
+                  // transform: `rotate(${courier.heading}deg)` 
+                }}
+                title={`${courier.name} - ${courier.speed_kmh} km/h`}
+              >
+                {renderCourierIcon(vType)}
+              </div>
+            </Marker>
+          );
+        })}
 
         {naiveRouteToRender && (
           <Source

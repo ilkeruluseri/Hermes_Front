@@ -7,13 +7,19 @@ export const useRouteStore = create((set, get) => ({
   hasFetched: false,
   loading: false,
   error: null,
-  
+
   routes: [],
   couriers: [],
   packages: [],
   routeSummary: null,
   explanation: null,
   selectedCourierId: null,
+
+  // Live State
+  liveCouriers: {}, // Stored as a dictionary for fast O(1) updates
+  wsConnected: false,
+  _wsRef: null, // Keep a private reference to the WebSocket instance
+  isConnecting: false,
 
   setSelectedCourier: (id) => set((state) => ({
     selectedCourierId: state.selectedCourierId === id ? null : id
@@ -24,7 +30,7 @@ export const useRouteStore = create((set, get) => ({
     if (get().hasFetched) return;
 
     set({ loading: true, error: null });
-    
+
     try {
       const data = await fetchFullRoute();
 
@@ -122,7 +128,106 @@ export const useRouteStore = create((set, get) => ({
       set({ error: error.message, loading: false });
     }
   },
-  
+
+  startSimulation: () => {
+    const { routes, _wsRef, isConnecting, wsConnected } = get();
+
+    // Safety check
+    if (routes.length === 0) return;
+
+    // SAFETY CHECK: If already connecting or connected, do nothing!
+    if (isConnecting || wsConnected) return;
+
+    // Mark as connecting so the UI can update
+    set({ isConnecting: true });
+
+    // Clean up any stale, dead sockets just in case
+    if (_wsRef && _wsRef.readyState === WebSocket.OPEN) {
+      _wsRef.close();
+    }
+
+    // Connect to the new simulation endpoint
+    const ws = new WebSocket('wss://team-041.hackaton.sivas.edu.tr/ws/simulation');
+
+    // 1. Send the config as soon as the connection opens
+    ws.onopen = () => {
+      set({ wsConnected: true, isConnecting: false });
+
+      const configMsg = {
+        vehicles: routes.map((route) => ({
+          courier_id: `courier-${route.vehicle_id}`,
+          name: `Courier ${route.vehicle_id}`,
+          vehicle_id: route.vehicle_id,
+          // Grab the raw coordinate array from your parsed geometry
+          coordinates: route.geometry.geometry.coordinates,
+          color: route.color
+        })),
+        speed_kmh: 60,
+        loop: true
+      };
+
+      ws.send(JSON.stringify(configMsg));
+    };
+
+    // 2. Listen for the position updates
+    ws.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+
+      if (data.type === 'error') {
+        console.error("Simulation error from server:", data.message);
+      }
+
+      if (data.type === 'started') {
+        console.log(`Simulation started for ${data.vehicle_count} vehicles.`);
+      }
+
+      // The new backend sends an array of couriers inside "position_update"
+      if (data.type === 'position_update') {
+        set((state) => {
+          const updatedCouriers = { ...state.liveCouriers };
+
+          data.couriers.forEach(courier => {
+            // Merge new data with existing data
+            updatedCouriers[courier.courier_id] = {
+              ...updatedCouriers[courier.courier_id],
+              ...courier,
+              // Normalize to a [lng, lat] array for your Map component
+              location: [courier.longitude, courier.latitude]
+            };
+          });
+
+          return { liveCouriers: updatedCouriers };
+        });
+      }
+
+      if (data.type === 'completed') {
+        console.log("Simulation finished route (loop is false).");
+      }
+    };
+
+    ws.onclose = () => {
+      set({ wsConnected: false, isConnecting: false, _wsRef: null, liveCouriers: {} });
+    };
+
+    ws.onerror = (err) => {
+      console.error('WS Error:', err);
+      // Ensure we clear the loading state if it fails
+      set({ isConnecting: false });
+    };
+
+    set({ _wsRef: ws });
+  },
+
+  stopSimulation: () => {
+    const { _wsRef } = get();
+    if (_wsRef) {
+      // 0 = CONNECTING, 1 = OPEN. Only close if it's actually open!
+      if (_wsRef.readyState === WebSocket.OPEN || _wsRef.readyState === WebSocket.CONNECTING) {
+        _wsRef.close();
+      }
+    }
+  },
+
   // Optional escape hatch to force a refetch if needed (e.g. refresh button)
   forceFetchData: async () => {
     set({ hasFetched: false });
