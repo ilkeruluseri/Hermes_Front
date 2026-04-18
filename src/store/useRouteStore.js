@@ -66,7 +66,8 @@ export const useRouteStore = create((set, get) => ({
               geometry: naiveGeometry
             } : null,
             currentPosition,
-            vehicleType
+            vehicleType,
+            stops: (data.optimized_route || []).filter(stop => stop.vehicle_id === vr.vehicle_id)
           };
         }).filter(r => r.geometry != null);
 

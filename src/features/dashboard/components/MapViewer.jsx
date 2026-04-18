@@ -9,6 +9,7 @@ const renderCourierIcon = (type) => {
     case 'truck': return '🚚';
     case 'motorcycle': return '🏍️';
     case 'car': default: return '🚗';
+    case 'van': return '🚐';
   }
 };
 
@@ -18,7 +19,7 @@ export default function MapViewer({ routes, selectedCourierId }) {
     : routes;
 
   const naiveRouteToRender = selectedCourierId !== null
-    ? routes.find(r => r.id === `route-${selectedCourierId}` || r.vehicle_id === selectedCourierId)?.naiveGeometry 
+    ? routes.find(r => r.id === `route-${selectedCourierId}` || r.vehicle_id === selectedCourierId)?.naiveGeometry
     : null;
 
   return (
@@ -29,15 +30,15 @@ export default function MapViewer({ routes, selectedCourierId }) {
           latitude: 39.7505,
           zoom: 11
         }}
-        mapStyle="mapbox://styles/mapbox/dark-v11" 
+        mapStyle="mapbox://styles/mapbox/dark-v11"
         mapboxAccessToken={MAPBOX_TOKEN}
         style={{ width: '100%', height: '100%' }}
       >
         {routesToRender && routesToRender.map((routeData, index) => (
           <React.Fragment key={`fragment-${routeData.id || index}`}>
-            <Source 
-              id={`route-${routeData.id || index}`} 
-              type="geojson" 
+            <Source
+              id={`route-${routeData.id || index}`}
+              type="geojson"
               data={routeData.geometry}
             >
               <Layer
@@ -48,16 +49,39 @@ export default function MapViewer({ routes, selectedCourierId }) {
                   'line-cap': 'round'
                 }}
                 paint={{
-                  'line-color': routeData.color || '#eb5647', 
+                  'line-color': routeData.color || '#eb5647',
                   'line-width': 5,
                   'line-opacity': 0.8
                 }}
               />
             </Source>
 
+            {routeData.stops && routeData.stops.map((stop, sIndex) => (
+              <Marker
+                key={`stop-${routeData.id}-${stop.stop_id || sIndex}`}
+                longitude={stop.longitude}
+                latitude={stop.latitude}
+                anchor="center"
+              >
+                <div
+                  className="stop-marker"
+                  style={{
+                    backgroundColor: routeData.color || '#eb5647',
+                    border: '2px solid var(--surface-color)',
+                    width: '12px',
+                    height: '12px',
+                    borderRadius: '50%',
+                    boxShadow: '0 0 4px rgba(0,0,0,0.5)',
+                    cursor: 'pointer'
+                  }}
+                  title={`${stop.stop_name || 'Stop'} ${stop.expected_delay_min > 0 ? `(Delay: ${stop.expected_delay_min}m)` : ''}`}
+                />
+              </Marker>
+            ))}
+
             {routeData.currentPosition && (
-              <Marker 
-                longitude={routeData.currentPosition[0]} 
+              <Marker
+                longitude={routeData.currentPosition[0]}
                 latitude={routeData.currentPosition[1]}
                 anchor="center"
               >
@@ -70,9 +94,9 @@ export default function MapViewer({ routes, selectedCourierId }) {
         ))}
 
         {naiveRouteToRender && (
-          <Source 
-            id="naive-route-source" 
-            type="geojson" 
+          <Source
+            id="naive-route-source"
+            type="geojson"
             data={naiveRouteToRender}
           >
             <Layer
@@ -83,7 +107,7 @@ export default function MapViewer({ routes, selectedCourierId }) {
                 'line-cap': 'round'
               }}
               paint={{
-                'line-color': '#707070', 
+                'line-color': '#707070',
                 'line-width': 4,
                 'line-opacity': 0.6,
                 'line-dasharray': [2, 2]
@@ -92,7 +116,7 @@ export default function MapViewer({ routes, selectedCourierId }) {
           </Source>
         )}
       </Map>
-      
+
       {/* Overlay to give it a premium feel */}
       <div className="map-overlay-layer pointer-events-none"></div>
     </div>

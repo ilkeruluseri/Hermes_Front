@@ -6,9 +6,9 @@ import PackageList from './PackageList';
 import { useRouteStore } from '../../../store/useRouteStore';
 
 export default function Dashboard() {
-  const { 
-    loading, error, fetchData, 
-    routes, couriers, packages, 
+  const {
+    loading, error, fetchData,
+    routes, couriers, packages,
     routeSummary, explanation,
     selectedCourierId, setSelectedCourier
   } = useRouteStore();
@@ -43,7 +43,7 @@ export default function Dashboard() {
 
       <main className="dashboard-main">
         {/* Explanation Banner */}
-        {explanation && explanation.overall_assessment && (
+        {/* explanation && explanation.overall_assessment && (
           <section className="dashboard-explanation glass-panel">
             <div className="explanation-header">
               <span className="ai-icon">✨</span>
@@ -58,7 +58,7 @@ export default function Dashboard() {
               </ul>
             )}
           </section>
-        )}
+        )*/}
 
         {/* Global KPIs */}
         {routeSummary && (
@@ -82,14 +82,18 @@ export default function Dashboard() {
           </section>
         )}
 
-        <section className="dashboard-map-section">
-          <MapViewer routes={routes} selectedCourierId={selectedCourierId} />
-        </section>
+        <div className="map-and-fleet-container">
+          <section className="dashboard-map-section">
+            <MapViewer routes={routes} selectedCourierId={selectedCourierId} />
+          </section>
 
-        <section className="dashboard-couriers-section">
-          <h2 className="section-title">Active Fleet</h2>
-          <CourierList couriers={couriers} selectedCourierId={selectedCourierId} onSelectCourier={setSelectedCourier} />
-        </section>
+          <section className="dashboard-couriers-section">
+            <h2 className="section-title">Active Fleet</h2>
+            <div className="fleet-scroll-area">
+              <CourierList couriers={couriers} selectedCourierId={selectedCourierId} onSelectCourier={setSelectedCourier} />
+            </div>
+          </section>
+        </div>
 
         <section className="dashboard-packages-section">
           <h2 className="section-title">Global Manifest</h2>

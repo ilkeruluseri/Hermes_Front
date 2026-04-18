@@ -104,14 +104,48 @@
   color: var(--text-primary);
 }
 
+.map-and-fleet-container {
+  display: flex;
+  gap: 2rem;
+  align-items: stretch;
+  height: 600px;
+}
+
 .dashboard-map-section {
-  height: 500px;
-  width: 100%;
+  flex: 1;
+  height: 100%;
   border-radius: 16px;
   overflow: hidden;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
   position: relative;
   border: 1px solid var(--glass-border);
+}
+
+.dashboard-couriers-section {
+  width: 380px;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.fleet-scroll-area {
+  flex: 1;
+  overflow-y: auto;
+  padding-right: 0.5rem;
+}
+
+.fleet-scroll-area::-webkit-scrollbar {
+  width: 6px;
+}
+.fleet-scroll-area::-webkit-scrollbar-track {
+  background: transparent;
+}
+.fleet-scroll-area::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 4px;
+}
+.fleet-scroll-area::-webkit-scrollbar-thumb:hover {
+  background: var(--primary-accent);
 }
 
 .section-title {
