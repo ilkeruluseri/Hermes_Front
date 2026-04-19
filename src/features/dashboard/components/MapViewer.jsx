@@ -29,24 +29,21 @@ export default function MapViewer({ routes, selectedCourierId, liveCouriers }) {
     : null;
 
   const firstRoute = routesToRender?.[0];
-  let startPoint = 'Unknown Start';
-  let endPoint = 'Unknown End';
+  let startPoint = null;
+  let endPoint = null;
 
   if (firstRoute?.stops?.length > 0) {
     const firstStop = firstRoute.stops[0];
     const lastStop = firstRoute.stops[firstRoute.stops.length - 1];
 
-    // Fallback chain: name -> address -> coordinates
-    startPoint = `${firstStop.latitude.toFixed(4)}, ${firstStop.longitude.toFixed(4)}`;
-    endPoint = `${lastStop.latitude.toFixed(4)}, ${lastStop.longitude.toFixed(4)}`;
+    startPoint = [firstStop.latitude, firstStop.longitude];
+    endPoint = [lastStop.latitude, lastStop.longitude];
+
   } else if (firstRoute?.geometry?.geometry?.coordinates?.length > 0) {
-    // Ultimate fallback if stops array is empty but geometry exists
-    console.log("last fallback used");
     const coords = firstRoute.geometry.geometry.coordinates;
-    startPoint = `${coords[0][1].toFixed(4)}, ${coords[0][0].toFixed(4)}`;
-    endPoint = `${coords[coords.length - 1][1].toFixed(4)}, ${coords[coords.length - 1][0].toFixed(4)}`;
+    startPoint = [coords[0][1], coords[0][0]];
+    endPoint = [coords[coords.length - 1][1], coords[coords.length - 1][0]];
   }
-  console.log(`Start: ${startPoint}, End: ${endPoint}`)
 
   return (
     <div className="map-viewer-container">
