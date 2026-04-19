@@ -1,0 +1,63 @@
+.route-card-container {
+  background-color: #ffffff;
+  padding: 16px;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  border: 1px solid #f1f5f9;
+  width: 240px;
+  font-family: system-ui, -apple-system, sans-serif;
+  position: relative; /* Required for the triangle pointer to position correctly */
+}
+
+.route-card-explanation {
+  margin: 0 0 16px 0;
+  font-size: 14px;
+  color: #334155;
+  line-height: 1.5;
+  font-weight: 500;
+}
+
+.route-card-metrics {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.route-card-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.route-card-label {
+  font-size: 13px;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.route-card-value-positive {
+  font-size: 14px;
+  font-weight: 600;
+  color: #16a34a; /* Green */
+}
+
+.route-card-value-negative {
+  font-size: 14px;
+  font-weight: 600;
+  color: #ef4444; /* Red */
+}
+
+.route-card-triangle {
+  position: absolute;
+  bottom: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-top: 8px solid #ffffff;
+  filter: drop-shadow(0 4px 2px rgba(0,0,0,0.05));
+}

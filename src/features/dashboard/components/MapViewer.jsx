@@ -39,6 +39,14 @@ export default function MapViewer({ routes, selectedCourierId, liveCouriers }) {
         mapboxAccessToken={MAPBOX_TOKEN}
         style={{ width: '100%', height: '100%' }}
       >
+        <RouteComparisonCard 
+          startPoint={routesToRender[0].startPoint}
+          endPoint={routesToRender[1].endPoint}
+          explanation="Taking the scenic coastal bypass avoids the main toll bridge."
+          timeSaved="12 mins"
+          kmsDifference="+2.5 km"
+          moneySaved="$4.50"
+        />
         {routesToRender && routesToRender.map((routeData, index) => (
           <React.Fragment key={`fragment-${routeData.id || index}`}>
             <Source
