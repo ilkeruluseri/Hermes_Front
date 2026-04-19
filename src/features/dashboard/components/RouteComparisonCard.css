@@ -2,11 +2,12 @@
   background-color: #ffffff;
   padding: 16px;
   border-radius: 12px;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
   border: 1px solid #f1f5f9;
   width: 240px;
   font-family: system-ui, -apple-system, sans-serif;
-  position: relative; /* Required for the triangle pointer to position correctly */
+  position: relative;
+  /* Required for the triangle pointer to position correctly */
 }
 
 .route-card-explanation {
@@ -40,13 +41,15 @@
 .route-card-value-positive {
   font-size: 14px;
   font-weight: 600;
-  color: #16a34a; /* Green */
+  color: #16a34a;
+  /* Green */
 }
 
 .route-card-value-negative {
   font-size: 14px;
   font-weight: 600;
-  color: #ef4444; /* Red */
+  color: #ef4444;
+  /* Red */
 }
 
 .route-card-triangle {
@@ -59,5 +62,5 @@
   border-left: 8px solid transparent;
   border-right: 8px solid transparent;
   border-top: 8px solid #ffffff;
-  filter: drop-shadow(0 4px 2px rgba(0,0,0,0.05));
+  filter: drop-shadow(0 4px 2px rgba(0, 0, 0, 0.05));
 }

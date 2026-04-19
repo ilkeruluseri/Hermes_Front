@@ -1,11 +1,11 @@
 import React, { useMemo } from 'react';
-import { Marker } from 'react-map-gl';
+import { Marker } from 'react-map-gl/mapbox';
 import './RouteComparisonCard.css';
 
 const calculateMidpoint = (start, end) => {
   return [
-    (start[0] + end[0]) / 2, // Longitude
-    (start[1] + end[1]) / 2  // Latitude
+    (start[1] + end[1]) / 2, // Longitude
+    (start[0] + end[0]) / 2  // Latitude
   ];
 };
 
@@ -28,14 +28,14 @@ export default function RouteComparisonCard({
   const [longitude, latitude] = midpoint;
 
   return (
-    <Marker 
-      longitude={longitude} 
-      latitude={latitude} 
-      anchor="bottom" 
+    <Marker
+      longitude={longitude}
+      latitude={latitude}
+      anchor="bottom"
       offset={[0, -15]} // Lifts the card slightly so the pointer doesn't block the route line
     >
       <div className="route-card-container">
-        
+
         {/* Explanation Header */}
         <p className="route-card-explanation">
           {explanation}
@@ -43,7 +43,7 @@ export default function RouteComparisonCard({
 
         {/* Metrics Grid */}
         <div className="route-card-metrics">
-          
+
           {/* Time Row */}
           <div className="route-card-row">
             <span className="route-card-label">
@@ -53,7 +53,7 @@ export default function RouteComparisonCard({
               {timeSaved}
             </span>
           </div>
-          
+
           {/* Distance Row */}
           <div className="route-card-row">
             <span className="route-card-label">
@@ -73,9 +73,9 @@ export default function RouteComparisonCard({
               {moneySaved}
             </span>
           </div>
-          
+
         </div>
-        
+
         {/* CSS triangle pointing down */}
         <div className="route-card-triangle" />
       </div>

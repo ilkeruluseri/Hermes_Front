@@ -2,6 +2,7 @@ const requestBody = {
   "stops": [
     {
       "stop_sequence": 1,
+      "stop_id": "s1",
       "stop_name": "Cumhuriyet Üniversitesi Şubesi",
       "latitude": 39.7150,
       "longitude": 37.0350,
@@ -18,6 +19,7 @@ const requestBody = {
     },
     {
       "stop_sequence": 2,
+      "stop_id": "s2",
       "stop_name": "Paşabahçe Dağıtım Noktası",
       "latitude": 39.7850,
       "longitude": 37.0300,
@@ -34,6 +36,7 @@ const requestBody = {
     },
     {
       "stop_sequence": 3,
+      "stop_id": "s3",
       "stop_name": "Organize Sanayi Merkezi",
       "latitude": 39.7400,
       "longitude": 36.9500,
@@ -77,4 +80,25 @@ export const fetchFullRoute = async () => {
     console.error('Failed to fetch route data:', error);
     throw error;
   }
+};
+
+export const completeStopRequest = async (stopId, actualDelayMin = null) => {
+  // Adjust the base URL to match your API domain
+  const baseUrl = 'https://team-041.hackaton.sivas.edu.tr/api/v1';
+
+  const response = await fetch(`${baseUrl}/stops/${stopId}/complete`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      // 'Authorization': `Bearer ${token}` // Add if your endpoint is protected
+    },
+    body: JSON.stringify({ actual_delay_min: actualDelayMin }),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.detail || `Failed to complete stop: ${response.status}`);
+  }
+
+  return response.json();
 };
