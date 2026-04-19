@@ -22,37 +22,30 @@ export default function Dashboard() {
 
   const activeCouriersList = Object.values(liveCouriers);
 
-  if (loading) {
-    return (
-      <div className="dashboard-container center-content">
-        <div className="loader"></div>
-        <p>Loading Optimization Data...</p>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="dashboard-container center-content error-state">
-        <p>Error loading data: {error}</p>
-        <button className="retry-btn" onClick={() => window.location.reload()}>Retry</button>
-      </div>
-    );
-  }
-
   return (
     <div className="dashboard-container">
       <header className="dashboard-page-header">
         <h1>Live Dispatch Map</h1>
 
-        {/* --- SIMULATION CONTROLS --- */}
+        {loading && (
+          <div className="loading-bar-wrapper">
+            <div className="loading-bar" />
+          </div>
+        )}
+
+        {error && (
+          <div className="dashboard-error-banner">
+            ⚠ {error}
+            <button onClick={() => window.location.reload()}>Retry</button>
+          </div>
+        )}
+
         <div className="simulation-controls" style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
           <span style={{ fontWeight: 'bold', color: wsConnected ? '#10b981' : (isConnecting ? '#f59e0b' : '#ef4444') }}>
             {wsConnected ? '🟢 Live' : (isConnecting ? '🟡 Connecting...' : '🔴 Offline')}
           </span>
           <button
             onClick={startSimulation}
-            // Disable the button if we are connected OR currently trying to connect
             disabled={!hasFetched || wsConnected || isConnecting}
             style={{
               padding: '8px 16px',
@@ -83,48 +76,77 @@ export default function Dashboard() {
             ■ Stop Sim
           </button>
         </div>
-
       </header>
 
       <main className="dashboard-main">
-        {/* Global KPIs */}
-        {routeSummary && (
-          <section className="dashboard-kpis">
-            <div className="small-kpi-card">
-              <span className="label">Overall Risk Score</span>
-              <span className="value">{routeSummary.overall_risk_score}</span>
-            </div>
-            <div className="small-kpi-card">
-              <span className="label">Total Expected Delay</span>
-              <span className="value">{routeSummary.expected_total_delay_min} min</span>
-            </div>
-            <div className="small-kpi-card">
-              <span className="label">Severe Stops</span>
-              <span className="value text-danger">{routeSummary.severe_stop_count}</span>
-            </div>
-            <div className="small-kpi-card">
-              <span className="label">VRP Status</span>
-              <span className="value">{routeSummary.vrp_status}</span>
-            </div>
-          </section>
-        )}
+        <section className="dashboard-kpis">
+          {loading
+            ? Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="small-kpi-card skeleton-card">
+                  <span className="skeleton-line skeleton-label" />
+                  <span className="skeleton-line skeleton-value" />
+                </div>
+              ))
+            : routeSummary && (
+                <>
+                  <div className="small-kpi-card">
+                    <span className="label">Overall Risk Score</span>
+                    <span className="value">{routeSummary.overall_risk_score}</span>
+                  </div>
+                  <div className="small-kpi-card">
+                    <span className="label">Total Expected Delay</span>
+                    <span className="value">{routeSummary.expected_total_delay_min} min</span>
+                  </div>
+                  <div className="small-kpi-card">
+                    <span className="label">Severe Stops</span>
+                    <span className="value text-danger">{routeSummary.severe_stop_count}</span>
+                  </div>
+                  <div className="small-kpi-card">
+                    <span className="label">VRP Status</span>
+                    <span className="value">{routeSummary.vrp_status}</span>
+                  </div>
+                </>
+              )
+          }
+        </section>
 
         <div className="map-and-fleet-container">
           <section className="dashboard-map-section">
-            <MapViewer routes={routes} selectedCourierId={selectedCourierId} liveCouriers={activeCouriersList} />
+            {loading
+              ? <div className="skeleton-map"><div className="skeleton-map-pulse" /></div>
+              : <MapViewer routes={routes} selectedCourierId={selectedCourierId} liveCouriers={activeCouriersList} />
+            }
           </section>
 
           <section className="dashboard-couriers-section">
             <h2 className="section-title">Active Fleet</h2>
             <div className="fleet-scroll-area">
-              <CourierList couriers={couriers} selectedCourierId={selectedCourierId} onSelectCourier={setSelectedCourier} />
+              {loading
+                ? Array.from({ length: 4 }).map((_, i) => (
+                    <div key={i} className="skeleton-courier-card">
+                      <div className="skeleton-avatar" />
+                      <div className="skeleton-courier-lines">
+                        <span className="skeleton-line" style={{ width: '60%' }} />
+                        <span className="skeleton-line" style={{ width: '40%' }} />
+                      </div>
+                    </div>
+                  ))
+                : <CourierList couriers={couriers} selectedCourierId={selectedCourierId} onSelectCourier={setSelectedCourier} />
+              }
             </div>
           </section>
         </div>
 
         <section className="dashboard-packages-section">
           <h2 className="section-title">Global Manifest</h2>
-          <PackageList packages={packages} />
+          {loading
+            ? Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="skeleton-package-row">
+                  <span className="skeleton-line" style={{ width: `${50 + i * 8}%` }} />
+                </div>
+              ))
+            : <PackageList packages={packages} />
+          }
         </section>
       </main>
     </div>

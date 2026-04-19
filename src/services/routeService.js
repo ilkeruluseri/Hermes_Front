@@ -60,14 +60,12 @@ export const saveRouteResult = async (optimizedRoute, depotLat, depotLon) => {
 };
 
 export const completeStopRequest = async (stopId, actualDelayMin = null) => {
-  // Adjust the base URL to match your API domain
   const baseUrl = 'https://team-041.hackaton.sivas.edu.tr/api/v1';
 
   const response = await fetch(`${baseUrl}/stops/${stopId}/complete`, {
     method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',
-      // 'Authorization': `Bearer ${token}` // Add if your endpoint is protected
     },
     body: JSON.stringify({ actual_delay_min: actualDelayMin }),
   });
