@@ -20,6 +20,10 @@ export const useRouteStore = create((set, get) => ({
   wsConnected: false,
   _wsRef: null, // Keep a private reference to the WebSocket instance
   isConnecting: false,
+  atStopEvent: null,
+  isSkipping: false,
+  reoptResult: null,
+  reoptFlash: false,
 
   setSelectedCourier: (id) => set((state) => ({
     selectedCourierId: state.selectedCourierId === id ? null : id
@@ -27,7 +31,7 @@ export const useRouteStore = create((set, get) => ({
 
   fetchData: async () => {
     // If we already successfully fetched data, don't refetch automatically
-    if (get().hasFetched) return;
+    if (get().hasFetched || get().loading) return;
 
     set({ loading: true, error: null });
 
@@ -160,7 +164,16 @@ export const useRouteStore = create((set, get) => ({
           vehicle_id: route.vehicle_id,
           // Grab the raw coordinate array from your parsed geometry
           coordinates: route.geometry.geometry.coordinates,
-          color: route.color
+          color: route.color,
+          stops: (route.stops || [])
+            .sort((a, b) => (a.optimized_position ?? 0) - (b.optimized_position ?? 0))
+            .filter(s => s.latitude && s.longitude)
+            .map(s => ({
+              stop_id: String(s.stop_id ?? s.stop_sequence),
+              lat: s.latitude,
+              lon: s.longitude,
+              dwell_seconds: 30
+            }))
         })),
         speed_kmh: 60,
         loop: true
@@ -203,10 +216,96 @@ export const useRouteStore = create((set, get) => ({
       if (data.type === 'completed') {
         console.log("Simulation finished route (loop is false).");
       }
+
+      if (data.type === 'at_stop') {
+        const { courier_id, stop_id } = data;
+        set({ atStopEvent: { courier_id, stop_id } });
+
+        const numericId = parseInt(stop_id, 10);
+        if (!isNaN(numericId) && numericId > 0) {
+          fetch(`https://team-041.hackaton.sivas.edu.tr/api/v1/stops/${numericId}/complete`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ actual_delay_min: 0 })
+          })
+          .then(async res => {
+            if (!res.ok) {
+              if (res.status === 400) {
+                set({ atStopEvent: null });
+                return Promise.reject('skip');
+              }
+              return Promise.reject(res.status);
+            }
+            return res.json();
+          })
+          .then(result => {
+            const reopt = result?.reopt;
+            const vehicleId = parseInt(courier_id.replace('courier-', ''), 10);
+
+            const completedStopId = result?.stop?.id;
+
+            set(state => {
+              const newRoutes = reopt?.geometry?.coordinates
+                ? state.routes.map(r =>
+                    r.vehicle_id === vehicleId
+                      ? {
+                          ...r,
+                          previousGeometry: r.geometry,
+                          geometry: { type: 'Feature', geometry: reopt.geometry },
+                          geometryVersion: (r.geometryVersion || 0) + 1
+                        }
+                      : r
+                  )
+                : state.routes;
+
+              const newCouriers = state.couriers.map(c => {
+                if (c.id !== vehicleId) return c;
+                const remainingStops = completedStopId
+                  ? c.stops.filter(s => s.stop_id !== completedStopId)
+                  : c.stops;
+                const seqMap = reopt?.new_sequence?.length
+                  ? Object.fromEntries(reopt.new_sequence.map((sid, idx) => [sid, idx]))
+                  : null;
+                const reorderedStops = seqMap
+                  ? [...remainingStops].sort((a, b) => (seqMap[a.stop_id] ?? 999) - (seqMap[b.stop_id] ?? 999))
+                  : remainingStops;
+                return { ...c, stops: reorderedStops, stopsRemaining: reorderedStops.length };
+              });
+
+              return {
+                reoptResult: reopt,
+                reoptFlash: true,
+                atStopEvent: null,
+                routes: newRoutes,
+                couriers: newCouriers,
+                explanation: reopt?.reason ?? state.explanation,
+              };
+            });
+
+            if (reopt?.geometry?.coordinates) {
+              const wsRef = get()._wsRef;
+              if (wsRef?.readyState === WebSocket.OPEN) {
+                wsRef.send(JSON.stringify({
+                  type: 'reroute',
+                  courier_id,
+                  coordinates: reopt.geometry.coordinates
+                }));
+              }
+            }
+
+            setTimeout(() => set({ reoptFlash: false }), 3000);
+          })
+          .catch(err => {
+            if (err !== 'skip') console.warn('Re-opt skipped:', err);
+            set({ atStopEvent: null });
+          });
+        }
+      }
     };
 
     ws.onclose = () => {
-      set({ wsConnected: false, isConnecting: false, _wsRef: null, liveCouriers: {} });
+      set({ wsConnected: false, isConnecting: false, isSkipping: false, _wsRef: null,
+            liveCouriers: {}, atStopEvent: null, reoptResult: null, reoptFlash: false });
     };
 
     ws.onerror = (err) => {
@@ -225,6 +324,20 @@ export const useRouteStore = create((set, get) => ({
       if (_wsRef.readyState === WebSocket.OPEN || _wsRef.readyState === WebSocket.CONNECTING) {
         _wsRef.close();
       }
+    }
+  },
+
+  skipToNextStop: async () => {
+    if (!get().wsConnected) return;
+    set({ isSkipping: true });
+    try {
+      await fetch('https://team-041.hackaton.sivas.edu.tr/api/v1/simulation/next-stop', {
+        method: 'POST'
+      });
+    } catch (err) {
+      console.error('Skip failed:', err);
+    } finally {
+      set({ isSkipping: false });
     }
   },
 

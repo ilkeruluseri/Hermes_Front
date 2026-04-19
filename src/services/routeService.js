@@ -52,27 +52,45 @@ const requestBody = {
   "depot_latitude": 39.7500,
   "depot_longitude": 37.0150,
   "use_p90": false,
-  "num_vehicles": 2,
+  "num_vehicles": 1,
   "time_limit_seconds": 10,
   "generate_explanation": true
 }
 
+const BASE_URL = 'https://team-041.hackaton.sivas.edu.tr/api/v1';
+
 export const fetchFullRoute = async () => {
   try {
-    const response = await fetch('https://team-041.hackaton.sivas.edu.tr/api/v1/full-route', {
+    const routeRes = await fetch(`${BASE_URL}/routes`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(requestBody),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        courier_id: 1,
+        dispatcher_id: 1,
+        date: new Date().toISOString(),
+        depot_latitude: 41.015,
+        depot_longitude: 28.979
+      })
+    });
+
+    if (!routeRes.ok) throw new Error(`Routes API error: ${routeRes.status}`);
+    const routeData = await routeRes.json();
+    console.log('[DEBUG] route created:', routeData);
+    const route_id = routeData.id;
+
+    const response = await fetch(`${BASE_URL}/full-route`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...requestBody, route_id }),
     });
 
     if (!response.ok) {
+      const errBody = await response.text();
+      console.error('[DEBUG] full-route error body:', errBody);
       throw new Error(`API error: ${response.status}`);
     }
 
-    const data = await response.json();
-    return data;
+    return await response.json();
   } catch (error) {
     console.error('Failed to fetch route data:', error);
     throw error;
