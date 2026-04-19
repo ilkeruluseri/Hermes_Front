@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { fetchFullRoute, completeStopRequest } from '../services/routeService';
+import { fetchFullRoute, completeStopRequest, saveRouteResult, requestBody } from '../services/routeService';
 
 const ROUTE_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#aa3bff'];
 
@@ -20,6 +20,7 @@ export const useRouteStore = create((set, get) => ({
   wsConnected: false,
   _wsRef: null, // Keep a private reference to the WebSocket instance
   isConnecting: false,
+  _stopIdMap: {}, // original_stop_id → db_stop_id
 
   setSelectedCourier: (id) => set((state) => ({
     selectedCourierId: state.selectedCourierId === id ? null : id
@@ -110,6 +111,19 @@ export const useRouteStore = create((set, get) => ({
         parsedPackages = data.optimized_route;
       }
 
+      // DB'ye kaydet, gerçek stop ID'lerini al
+      const saved = await saveRouteResult(
+        data.optimized_route || [],
+        requestBody.depot_latitude,
+        requestBody.depot_longitude
+      );
+      const stopIdMap = {};
+      saved.vehicle_routes.forEach(vr => {
+        vr.stops.forEach(s => {
+          stopIdMap[s.original_stop_id] = s.db_stop_id;
+        });
+      });
+
       set({
         routes: parsedRoutes,
         couriers: parsedCouriers,
@@ -117,7 +131,8 @@ export const useRouteStore = create((set, get) => ({
         routeSummary: data.route_summary || null,
         explanation: data.explanation || null,
         loading: false,
-        hasFetched: true
+        hasFetched: true,
+        _stopIdMap: stopIdMap
       });
 
     } catch (error) {
@@ -126,7 +141,7 @@ export const useRouteStore = create((set, get) => ({
   },
 
   startSimulation: () => {
-    const { routes, _wsRef, isConnecting, wsConnected } = get();
+    const { routes, _wsRef, isConnecting, wsConnected, _stopIdMap } = get();
 
     // Safety check
     if (routes.length === 0) return;
@@ -162,7 +177,7 @@ export const useRouteStore = create((set, get) => ({
             .sort((a, b) => (a.optimized_position ?? 0) - (b.optimized_position ?? 0))
             .filter(s => s.latitude && s.longitude)
             .map(s => ({
-              stop_id: String(s.stop_id),
+              stop_id: _stopIdMap[s.stop_id] ?? s.stop_id,
               lat: s.latitude,
               lon: s.longitude,
               dwell_seconds: 30
