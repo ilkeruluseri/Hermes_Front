@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { fetchFullRoute } from '../services/routeService';
+import { fetchFullRoute, completeStopRequest, saveRouteResult, requestBody } from '../services/routeService';
 
 const ROUTE_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#aa3bff'];
 
@@ -20,6 +20,7 @@ export const useRouteStore = create((set, get) => ({
   wsConnected: false,
   _wsRef: null, // Keep a private reference to the WebSocket instance
   isConnecting: false,
+  _stopIdMap: {}, // original_stop_id → db_stop_id
 
   setSelectedCourier: (id) => set((state) => ({
     selectedCourierId: state.selectedCourierId === id ? null : id
@@ -53,10 +54,6 @@ export const useRouteStore = create((set, get) => ({
               type: 'LineString',
               coordinates: [coords[0], coords[coords.length - 1]]
             };
-
-            // Mock current position somewhere in the middle of the route
-            currentPosition = coords[Math.floor(coords.length / 2)];
-            vehicleType = vehicleTypes[index % vehicleTypes.length];
           }
 
           return {
@@ -114,6 +111,19 @@ export const useRouteStore = create((set, get) => ({
         parsedPackages = data.optimized_route;
       }
 
+      // DB'ye kaydet, gerçek stop ID'lerini al
+      const saved = await saveRouteResult(
+        data.optimized_route || [],
+        requestBody.depot_latitude,
+        requestBody.depot_longitude
+      );
+      const stopIdMap = {};
+      saved.vehicle_routes.forEach(vr => {
+        vr.stops.forEach(s => {
+          stopIdMap[s.original_stop_id] = s.db_stop_id;
+        });
+      });
+
       set({
         routes: parsedRoutes,
         couriers: parsedCouriers,
@@ -121,7 +131,8 @@ export const useRouteStore = create((set, get) => ({
         routeSummary: data.route_summary || null,
         explanation: data.explanation || null,
         loading: false,
-        hasFetched: true
+        hasFetched: true,
+        _stopIdMap: stopIdMap
       });
 
     } catch (error) {
@@ -130,7 +141,7 @@ export const useRouteStore = create((set, get) => ({
   },
 
   startSimulation: () => {
-    const { routes, _wsRef, isConnecting, wsConnected } = get();
+    const { routes, _wsRef, isConnecting, wsConnected, _stopIdMap } = get();
 
     // Safety check
     if (routes.length === 0) return;
@@ -153,6 +164,7 @@ export const useRouteStore = create((set, get) => ({
     ws.onopen = () => {
       set({ wsConnected: true, isConnecting: false });
 
+      console.log("route: ", routes)
       const configMsg = {
         vehicles: routes.map((route) => ({
           courier_id: `courier-${route.vehicle_id}`,
@@ -160,7 +172,16 @@ export const useRouteStore = create((set, get) => ({
           vehicle_id: route.vehicle_id,
           // Grab the raw coordinate array from your parsed geometry
           coordinates: route.geometry.geometry.coordinates,
-          color: route.color
+          color: route.color,
+          stops: (route.stops || [])
+            .sort((a, b) => (a.optimized_position ?? 0) - (b.optimized_position ?? 0))
+            .filter(s => s.latitude && s.longitude)
+            .map(s => ({
+              stop_id: _stopIdMap[s.stop_id] ?? s.stop_id,
+              lat: s.latitude,
+              lon: s.longitude,
+              dwell_seconds: 30
+            }))
         })),
         speed_kmh: 60,
         loop: true
@@ -198,6 +219,65 @@ export const useRouteStore = create((set, get) => ({
 
           return { liveCouriers: updatedCouriers };
         });
+      }
+
+      if (data.type === 'at_stop') {
+        console.log(`Vehicle ${data.vehicle_id} arrived at stop ${data.stop_id}`);
+
+        // Ensure we don't block the WebSocket listener while waiting for the HTTP response
+        completeStopRequest(data.stop_id, data.delay_min || 0)
+          .then((response) => {
+            const { stop, reopt } = response;
+
+            set((state) => {
+              // 1. Update the stop status in the couriers array
+              const updatedCouriers = state.couriers.map(courier => {
+                if (courier.id === stop.vehicle_id) {
+                  return {
+                    ...courier,
+                    stops: courier.stops.map(s =>
+                      s.id === stop.id ? { ...s, status: 'completed' } : s
+                    )
+                  };
+                }
+                return courier;
+              });
+
+              // 2. Handle Re-optimization route swapping if triggered
+              let updatedRoutes = state.routes;
+              if (reopt.triggered && reopt.geometry) {
+                console.log(`Re-optimization triggered for route ${stop.vehicle_id}!`);
+
+                updatedRoutes = state.routes.map(route => {
+                  if (route.vehicle_id === stop.vehicle_id) {
+                    return {
+                      ...route,
+                      // Replace the old Mapbox GeoJSON with the new one
+                      geometry: {
+                        type: 'Feature',
+                        geometry: reopt.geometry
+                      },
+                      naiveGeometry: reopt.previous_geometry ? {
+                        type: 'Feature',
+                        geometry: reopt.previous_geometry
+                      } : route.naiveGeometry
+                      // Optional: You can also map the reopt.new_sequence here to reorder stops
+                    };
+                  }
+                  return route;
+                });
+              }
+
+              return {
+                couriers: updatedCouriers,
+                routes: updatedRoutes,
+                // You may also want to update the global `packages` array similarly to couriers
+              };
+            });
+          })
+          .catch((error) => {
+            console.error("Failed to complete stop or re-optimize:", error);
+          });
       }
 
       if (data.type === 'completed') {
