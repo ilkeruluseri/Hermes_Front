@@ -1,15 +1,25 @@
 import React from 'react';
 import './CourierCard.css';
 
-export default function CourierCard({ courier, isSelected, onSelect }) {
+export default function CourierCard({ courier, isSelected, onSelect, hasSuggestion }) {
   const { optimizationMetrics } = courier;
   return (
     <div 
-      className={`courier-card glass-panel ${courier.currentStatus === 'At Risk' ? 'border-danger' : ''} ${isSelected ? 'selected' : ''}`} 
+      className={`courier-card glass-panel ${courier.currentStatus === 'At Risk' ? 'border-danger' : ''} ${isSelected ? 'selected' : ''} ${hasSuggestion ? 'has-suggestion' : ''}`} 
       style={{ '--route-color': courier.routeColor }}
       onClick={onSelect}
     >
-      <div className="courier-card-header">
+      {hasSuggestion && (
+        <div className="suggestion-badge" style={{
+          position: 'absolute', top: 0, right: 0, left: 0,
+          background: 'var(--primary-accent)', color: 'white',
+          fontSize: '0.75rem', fontWeight: 'bold', textAlign: 'center',
+          padding: '2px 0', zIndex: 10, animation: 'pulse 2s infinite'
+        }}>
+          New Route Suggestion!
+        </div>
+      )}
+      <div className="courier-card-header" style={{ marginTop: hasSuggestion ? '12px' : '0' }}>
         <div className="courier-profile">
           <div className="courier-avatar">
             {courier.initials}

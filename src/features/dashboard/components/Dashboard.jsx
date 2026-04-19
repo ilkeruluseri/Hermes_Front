@@ -12,7 +12,7 @@ export default function Dashboard() {
     routeSummary, explanation,
     selectedCourierId, setSelectedCourier, hasFetched,
     startSimulation, stopSimulation, wsConnected,
-    liveCouriers, isConnecting
+    liveCouriers, isConnecting, pendingSuggestions, handleSuggestionDecision
   } = useRouteStore();
 
   useEffect(() => {
@@ -114,7 +114,7 @@ export default function Dashboard() {
           <section className="dashboard-map-section">
             {loading
               ? <div className="skeleton-map"><div className="skeleton-map-pulse" /></div>
-              : <MapViewer routes={routes} selectedCourierId={selectedCourierId} liveCouriers={activeCouriersList} />
+              : <MapViewer routes={routes} selectedCourierId={selectedCourierId} liveCouriers={activeCouriersList} pendingSuggestions={pendingSuggestions} handleSuggestionDecision={handleSuggestionDecision} />
             }
           </section>
 
@@ -131,7 +131,7 @@ export default function Dashboard() {
                       </div>
                     </div>
                   ))
-                : <CourierList couriers={couriers} selectedCourierId={selectedCourierId} onSelectCourier={setSelectedCourier} />
+                : <CourierList couriers={couriers} selectedCourierId={selectedCourierId} onSelectCourier={setSelectedCourier} pendingSuggestions={pendingSuggestions} />
               }
             </div>
           </section>

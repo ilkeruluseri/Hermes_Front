@@ -49,3 +49,22 @@ export const completeStopRequest = async (stopId, actualDelayMin = null) => {
 
   return response.json();
 };
+
+export const postSuggestionDecision = async (routeId, suggestionId, action) => {
+  const baseUrl = 'https://team-041.hackaton.sivas.edu.tr/api/v1';
+
+  const response = await fetch(`${baseUrl}/routes/${routeId}/suggestion/${suggestionId}/decision`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ action }),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.detail || `Failed to make decision: ${response.status}`);
+  }
+
+  return response.json();
+};

@@ -5,8 +5,14 @@ export default function RouteComparisonCard({
   timeSaved,
   moneySaved,
   kmsDifference,
-  explanation
+  explanation,
+  isVisible,
+  onAccept,
+  onReject,
+  isProcessing
 }) {
+  if (!isVisible) return null;
+
   return (
     <div className="route-card-container">
       {/* Explanation Header */}
@@ -47,6 +53,23 @@ export default function RouteComparisonCard({
           </span>
         </div>
 
+      </div>
+
+      <div className="route-card-actions" style={{ display: 'flex', gap: '10px', marginTop: '15px' }}>
+        <button 
+          onClick={onReject} 
+          disabled={isProcessing}
+          style={{ flex: 1, padding: '8px', background: 'var(--danger)', color: 'white', border: 'none', borderRadius: '4px', cursor: isProcessing ? 'not-allowed' : 'pointer' }}
+        >
+          Reject
+        </button>
+        <button 
+          onClick={onAccept} 
+          disabled={isProcessing}
+          style={{ flex: 1, padding: '8px', background: 'var(--success)', color: 'white', border: 'none', borderRadius: '4px', cursor: isProcessing ? 'not-allowed' : 'pointer' }}
+        >
+          {isProcessing ? 'Processing...' : 'Accept'}
+        </button>
       </div>
     </div>
   );

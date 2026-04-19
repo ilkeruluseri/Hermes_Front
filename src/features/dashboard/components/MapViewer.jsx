@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import Map, { Source, Layer, Marker } from 'react-map-gl/mapbox';
 import './MapViewer.css';
 import RouteComparisonCard from './RouteComparisonCard';
@@ -14,7 +14,30 @@ const renderCourierIcon = (type) => {
   }
 };
 
-export default function MapViewer({ routes, selectedCourierId, liveCouriers }) {
+export default function MapViewer({ routes, selectedCourierId, liveCouriers, pendingSuggestions = {}, handleSuggestionDecision }) {
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  const activeSuggestion = selectedCourierId !== null ? pendingSuggestions[selectedCourierId] : null;
+
+  const handleAccept = async () => {
+    if (!activeSuggestion) return;
+    setIsProcessing(true);
+    try {
+      await handleSuggestionDecision(selectedCourierId, activeSuggestion.suggestion_id, 'accept');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleReject = async () => {
+    if (!activeSuggestion) return;
+    setIsProcessing(true);
+    try {
+      await handleSuggestionDecision(selectedCourierId, activeSuggestion.suggestion_id, 'reject');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
   const routesToRender = selectedCourierId !== null
     ? routes.filter(r => r.id === `route-${selectedCourierId}` || r.vehicle_id === selectedCourierId)
     : routes;
@@ -60,12 +83,14 @@ export default function MapViewer({ routes, selectedCourierId, liveCouriers }) {
         style={{ width: '100%', height: '100%' }}
       >
         <RouteComparisonCard
-          startPoint={startPoint}
-          endPoint={endPoint}
-          explanation="Taking the scenic coastal bypass avoids the main toll bridge."
-          timeSaved="12 mins"
-          kmsDifference="+2.5 km"
-          moneySaved="$4.50"
+          isVisible={!!activeSuggestion}
+          explanation="A new optimized route is available to reduce expected delay."
+          timeSaved={activeSuggestion ? `${activeSuggestion.estimated_time_savings_min || 0} mins` : ''}
+          kmsDifference="-1.2 km"
+          moneySaved="$2.50"
+          onAccept={handleAccept}
+          onReject={handleReject}
+          isProcessing={isProcessing}
         />
         {routesToRender && routesToRender.map((routeData, index) => (
           <React.Fragment key={`fragment-${routeData.id || index}`}>
@@ -164,6 +189,29 @@ export default function MapViewer({ routes, selectedCourierId, liveCouriers }) {
                 'line-width': 4,
                 'line-opacity': 0.6,
                 'line-dasharray': [2, 2]
+              }}
+            />
+          </Source>
+        )}
+
+        {activeSuggestion && activeSuggestion.geometry && (
+          <Source
+            id="suggested-route-source"
+            type="geojson"
+            data={{ type: 'Feature', geometry: activeSuggestion.geometry }}
+          >
+            <Layer
+              id="suggested-route-layer"
+              type="line"
+              layout={{
+                'line-join': 'round',
+                'line-cap': 'round'
+              }}
+              paint={{
+                'line-color': '#10b981',
+                'line-width': 6,
+                'line-opacity': 0.9,
+                'line-dasharray': [2, 1.5]
               }}
             />
           </Source>
