@@ -162,7 +162,7 @@ export const useRouteStore = create((set, get) => ({
             .sort((a, b) => (a.optimized_position ?? 0) - (b.optimized_position ?? 0))
             .filter(s => s.latitude && s.longitude)
             .map(s => ({
-              stop_id: String(s.stop_id),
+              stop_id: parseInt(s.stop_id),
               lat: s.latitude,
               lon: s.longitude,
               dwell_seconds: 30

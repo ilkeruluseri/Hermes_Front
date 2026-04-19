@@ -2,10 +2,10 @@ const requestBody = {
   "stops": [
     {
       "stop_sequence": 1,
-      "stop_id": "s1",
+      "stop_id": "1",
       "stop_name": "Cumhuriyet Üniversitesi Şubesi",
-      "latitude": 39.7150,
-      "longitude": 37.0350,
+      "latitude": 39.7200,
+      "longitude": 37.0200,
       "cumulative_delay_min": 0.0,
       "prev_stop_delay_min": 0.0,
       "time_window_slack_min": 45.0,
@@ -19,10 +19,10 @@ const requestBody = {
     },
     {
       "stop_sequence": 2,
-      "stop_id": "s2",
+      "stop_id": "2",
       "stop_name": "Paşabahçe Dağıtım Noktası",
-      "latitude": 39.7850,
-      "longitude": 37.0300,
+      "latitude": 39.7550,
+      "longitude": 37.0200,
       "cumulative_delay_min": 8.0,
       "prev_stop_delay_min": 8.0,
       "time_window_slack_min": 20.0,
@@ -36,7 +36,7 @@ const requestBody = {
     },
     {
       "stop_sequence": 3,
-      "stop_id": "s3",
+      "stop_id": "3",
       "stop_name": "Organize Sanayi Merkezi",
       "latitude": 39.7400,
       "longitude": 36.9500,
