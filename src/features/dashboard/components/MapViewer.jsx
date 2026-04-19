@@ -42,7 +42,6 @@ export default function MapViewer({ routes, selectedCourierId, liveCouriers }) {
         {routesToRender && routesToRender.map((routeData, index) => (
           <React.Fragment key={`fragment-${routeData.id || index}`}>
             <Source
-              key={`source-${routeData.id || index}-${routeData.geometryVersion || 0}`}
               id={`route-${routeData.id || index}`}
               type="geojson"
               data={routeData.geometry}
@@ -62,28 +61,7 @@ export default function MapViewer({ routes, selectedCourierId, liveCouriers }) {
               />
             </Source>
 
-              {routeData.previousGeometry && (
-              <Source
-                key={`prev-source-${routeData.id || index}-${routeData.geometryVersion || 0}`}
-                id={`prev-route-${routeData.id || index}`}
-                type="geojson"
-                data={routeData.previousGeometry}
-              >
-                <Layer
-                  id={`prev-layer-${routeData.id || index}`}
-                  type="line"
-                  layout={{ 'line-join': 'round', 'line-cap': 'round' }}
-                  paint={{
-                    'line-color': routeData.color || '#eb5647',
-                    'line-width': 3,
-                    'line-opacity': 0.4,
-                    'line-dasharray': [3, 3]
-                  }}
-                />
-              </Source>
-            )}
-
-          {routeData.stops && routeData.stops.map((stop, sIndex) => (
+            {routeData.stops && routeData.stops.map((stop, sIndex) => (
               <Marker
                 key={`stop-${routeData.id}-${stop.stop_id || sIndex}`}
                 longitude={stop.longitude}

@@ -12,8 +12,7 @@ export default function Dashboard() {
     routeSummary, explanation,
     selectedCourierId, setSelectedCourier, hasFetched,
     startSimulation, stopSimulation, wsConnected,
-    liveCouriers, isConnecting,
-    skipToNextStop, isSkipping, atStopEvent, reoptFlash, reoptResult
+    liveCouriers, isConnecting
   } = useRouteStore();
 
   useEffect(() => {
@@ -83,45 +82,7 @@ export default function Dashboard() {
           >
             ■ Stop Sim
           </button>
-
-          <button
-            onClick={skipToNextStop}
-            disabled={!wsConnected || isSkipping}
-            style={{
-              padding: '8px 16px',
-              background: '#6366f1',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: (!wsConnected || isSkipping) ? 'not-allowed' : 'pointer',
-              opacity: (!wsConnected || isSkipping) ? 0.6 : 1
-            }}
-          >
-            {isSkipping ? '...' : '⏭ Next Stop'}
-          </button>
         </div>
-
-        {atStopEvent && wsConnected && (
-          <div style={{
-            padding: '6px 12px', background: '#f59e0b22',
-            border: '1px solid #f59e0b', borderRadius: '4px',
-            color: '#f59e0b', fontSize: '0.85rem'
-          }}>
-            ⏳ {atStopEvent.courier_id} arrived at stop {atStopEvent.stop_id} — re-optimizing...
-          </div>
-        )}
-
-        {reoptFlash && !atStopEvent && (
-          <div style={{
-            padding: '6px 12px', background: '#10b98122',
-            border: '1px solid #10b981', borderRadius: '4px',
-            color: '#10b981', fontSize: '0.85rem'
-          }}>
-            ✓ Route updated
-            {reoptResult?.total_distance_m && ` — ${(reoptResult.total_distance_m / 1000).toFixed(1)} km`}
-            {reoptResult?.total_duration_s && ` · ${Math.round(reoptResult.total_duration_s / 60)} min`}
-          </div>
-        )}
 
       </header>
 
