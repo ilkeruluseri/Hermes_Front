@@ -205,19 +205,32 @@ export const useRouteStore = create((set, get) => ({
       // The new backend sends an array of couriers inside "position_update"
       if (data.type === 'position_update') {
         set((state) => {
-          const updatedCouriers = { ...state.liveCouriers };
+          let hasChanged = false;
+          const patch = {};
 
           data.couriers.forEach(courier => {
-            // Merge new data with existing data
-            updatedCouriers[courier.courier_id] = {
-              ...updatedCouriers[courier.courier_id],
-              ...courier,
-              // Normalize to a [lng, lat] array for your Map component
-              location: [courier.longitude, courier.latitude]
-            };
+            const existing = state.liveCouriers[courier.courier_id];
+            const newLocation = [courier.longitude, courier.latitude];
+
+            // Only update if position actually changed (avoid unnecessary re-renders)
+            if (
+              !existing ||
+              existing.location?.[0] !== newLocation[0] ||
+              existing.location?.[1] !== newLocation[1] ||
+              existing.speed_kmh !== courier.speed_kmh
+            ) {
+              hasChanged = true;
+              patch[courier.courier_id] = {
+                ...existing,
+                ...courier,
+                location: newLocation
+              };
+            }
           });
 
-          return { liveCouriers: updatedCouriers };
+          if (!hasChanged) return state; // No-op: skip re-render entirely
+
+          return { liveCouriers: { ...state.liveCouriers, ...patch } };
         });
       }
 
