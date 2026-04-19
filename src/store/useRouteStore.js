@@ -220,57 +220,69 @@ export const useRouteStore = create((set, get) => ({
       }
 
       if (data.type === 'at_stop') {
-        console.log(`Vehicle ${data.vehicle_id} arrived at stop ${data.stop_id}`);
+        // Parse numeric vehicleId from "courier-0" → 0, "courier-1" → 1, etc.
+        const vehicleId = parseInt(data.courier_id.replace('courier-', ''), 10);
+        console.log(`Vehicle ${vehicleId} arrived at stop ${data.stop_id}`);
 
-        // Ensure we don't block the WebSocket listener while waiting for the HTTP response
-        completeStopRequest(data.stop_id, data.delay_min || 0)
+        completeStopRequest(data.stop_id)
           .then((response) => {
             const { stop, reopt } = response;
 
             set((state) => {
-              // 1. Update the stop status in the couriers array
+              // 1. Mark the completed stop.
+              //    stop.id from the response is a number; state stop_id is a string — cast to match.
               const updatedCouriers = state.couriers.map(courier => {
-                if (courier.id === stop.vehicle_id) {
+                if (courier.id === vehicleId) {
                   return {
                     ...courier,
                     stops: courier.stops.map(s =>
-                      s.id === stop.id ? { ...s, status: 'completed' } : s
+                      s.stop_id === String(stop.id) ? { ...s, status: 'completed' } : s
                     )
                   };
                 }
                 return courier;
               });
 
-              // 2. Handle Re-optimization route swapping if triggered
+              // 2. Geometry swap on re-optimization.
+              //    New route becomes the primary line; old route is demoted to naiveGeometry (dashed).
               let updatedRoutes = state.routes;
-              if (reopt.triggered && reopt.geometry) {
-                console.log(`Re-optimization triggered for route ${stop.vehicle_id}!`);
-
+              if (reopt?.triggered && reopt.geometry) {
+                console.log(`Re-optimization triggered for vehicle ${vehicleId}`);
                 updatedRoutes = state.routes.map(route => {
-                  if (route.vehicle_id === stop.vehicle_id) {
+                  if (route.vehicle_id === vehicleId) {
                     return {
                       ...route,
-                      // Replace the old Mapbox GeoJSON with the new one
-                      geometry: {
-                        type: 'Feature',
-                        geometry: reopt.geometry
-                      },
-                      naiveGeometry: reopt.previous_geometry ? {
-                        type: 'Feature',
-                        geometry: reopt.previous_geometry
-                      } : route.naiveGeometry
-                      // Optional: You can also map the reopt.new_sequence here to reorder stops
+                      geometry: { type: 'Feature', geometry: reopt.geometry },
+                      naiveGeometry: reopt.previous_geometry
+                        ? { type: 'Feature', geometry: reopt.previous_geometry }
+                        : route.naiveGeometry,
                     };
                   }
                   return route;
                 });
               }
 
-              return {
-                couriers: updatedCouriers,
-                routes: updatedRoutes,
-                // You may also want to update the global `packages` array similarly to couriers
-              };
+              // 3. Reorder stops by new_sequence (values are stop IDs).
+              //    This keeps StopList, NextStopBanner, and stop markers in sync.
+              let finalCouriers = updatedCouriers;
+              if (reopt?.triggered && reopt.new_sequence?.length) {
+                const seqMap = new Map(
+                  reopt.new_sequence.map((stopId, idx) => [String(stopId), idx])
+                );
+                finalCouriers = updatedCouriers.map(courier => {
+                  if (courier.id === vehicleId) {
+                    const reordered = [...courier.stops].sort((a, b) => {
+                      const ia = seqMap.has(a.stop_id) ? seqMap.get(a.stop_id) : Infinity;
+                      const ib = seqMap.has(b.stop_id) ? seqMap.get(b.stop_id) : Infinity;
+                      return ia - ib;
+                    });
+                    return { ...courier, stops: reordered };
+                  }
+                  return courier;
+                });
+              }
+
+              return { couriers: finalCouriers, routes: updatedRoutes };
             });
           })
           .catch((error) => {
