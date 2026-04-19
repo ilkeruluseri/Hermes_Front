@@ -167,3 +167,134 @@
   display: inline-block;
   box-shadow: 0 0 8px var(--primary-accent-glow);
 }
+
+/* Loading bar */
+.loading-bar-wrapper {
+  height: 3px;
+  background: var(--border-color);
+  border-radius: 2px;
+  overflow: hidden;
+  margin: 0.75rem 0;
+}
+
+.loading-bar {
+  height: 100%;
+  width: 40%;
+  background: var(--primary-accent);
+  border-radius: 2px;
+  animation: loading-slide 1.4s ease-in-out infinite;
+}
+
+@keyframes loading-slide {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(350%); }
+}
+
+/* Error banner */
+.dashboard-error-banner {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.5rem 1rem;
+  background: #ef444422;
+  border: 1px solid #ef4444;
+  border-radius: 6px;
+  color: #ef4444;
+  font-size: 0.9rem;
+  margin-bottom: 0.5rem;
+}
+
+.dashboard-error-banner button {
+  background: #ef4444;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 4px 10px;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+/* Skeleton shimmer */
+@keyframes shimmer {
+  0% { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+
+.skeleton-line {
+  display: block;
+  height: 12px;
+  border-radius: 6px;
+  background: linear-gradient(90deg, var(--border-color) 25%, color-mix(in srgb, var(--border-color) 60%, white) 50%, var(--border-color) 75%);
+  background-size: 400px 100%;
+  animation: shimmer 1.4s infinite linear;
+}
+
+.skeleton-card {
+  gap: 0.75rem;
+}
+
+.skeleton-label {
+  width: 60%;
+  height: 10px;
+}
+
+.skeleton-value {
+  width: 40%;
+  height: 24px;
+}
+
+.skeleton-map {
+  width: 100%;
+  height: 100%;
+  background: var(--surface-color);
+  border-radius: 16px;
+  overflow: hidden;
+  position: relative;
+}
+
+.skeleton-map-pulse {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, var(--border-color) 25%, color-mix(in srgb, var(--border-color) 60%, white) 50%, var(--border-color) 75%);
+  background-size: 800px 100%;
+  animation: shimmer 1.8s infinite linear;
+}
+
+.skeleton-courier-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  margin-bottom: 0.75rem;
+  background: var(--surface-color);
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+}
+
+.skeleton-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: linear-gradient(90deg, var(--border-color) 25%, color-mix(in srgb, var(--border-color) 60%, white) 50%, var(--border-color) 75%);
+  background-size: 400px 100%;
+  animation: shimmer 1.4s infinite linear;
+}
+
+.skeleton-courier-lines {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.skeleton-package-row {
+  height: 40px;
+  margin-bottom: 0.5rem;
+  border-radius: 8px;
+  background: var(--surface-color);
+  border: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  padding: 0 1rem;
+}

@@ -41,12 +41,11 @@ export default function MapViewer({ routes, selectedCourierId, liveCouriers }) {
     endPoint = `${lastStop.latitude.toFixed(4)}, ${lastStop.longitude.toFixed(4)}`;
   } else if (firstRoute?.geometry?.geometry?.coordinates?.length > 0) {
     // Ultimate fallback if stops array is empty but geometry exists
-    console.log("last fallback used");
     const coords = firstRoute.geometry.geometry.coordinates;
     startPoint = `${coords[0][1].toFixed(4)}, ${coords[0][0].toFixed(4)}`;
     endPoint = `${coords[coords.length - 1][1].toFixed(4)}, ${coords[coords.length - 1][0].toFixed(4)}`;
   }
-  console.log(`Start: ${startPoint}, End: ${endPoint}`)
+
 
   return (
     <div className="map-viewer-container">
@@ -112,38 +111,16 @@ export default function MapViewer({ routes, selectedCourierId, liveCouriers }) {
                 />
               </Marker>
             ))}
-
-            {liveCouriersToRender.map((courier) => {
-              // Attempt to find the matching static route to grab the specific vehicleType (car/truck/etc)
-              const matchingRoute = routes.find(r => r.vehicle_id === courier.vehicle_id);
-              const vType = matchingRoute ? matchingRoute.vehicleType : 'car';
-
-              return (
-                <Marker
-                  key={`live-${courier.courier_id}`}
-                  longitude={courier.location[0]}
-                  latitude={courier.location[1]}
-                  anchor="center"
-                  style={{ transition: 'transform 0.5s linear' }} // Adds smooth gliding between WS ticks
-                >
-                  <div
-                    className="courier-marker"
-                    style={{
-                      borderColor: courier.color || 'var(--primary-accent)',
-                      // Optional: if you switch to a top-down icon, you can rotate it with the heading!
-                      // transform: `rotate(${courier.heading}deg)` 
-                    }}
-                    title={`${courier.name} - ${courier.speed_kmh} km/h`}
-                  >
-                    {renderCourierIcon(vType)}
-                  </div>
-                </Marker>
-              );
-            })}
           </React.Fragment>
         ))}
 
-        {liveCouriersToRender.map((courier) => {
+        {liveCouriersToRender
+          .filter(courier =>
+            Array.isArray(courier.location) &&
+            typeof courier.location[0] === 'number' && !isNaN(courier.location[0]) &&
+            typeof courier.location[1] === 'number' && !isNaN(courier.location[1])
+          )
+          .map((courier) => {
           // Attempt to find the matching static route to grab the specific vehicleType (car/truck/etc)
           const matchingRoute = routes.find(r => r.vehicle_id === courier.vehicle_id);
           const vType = matchingRoute ? matchingRoute.vehicleType : 'car';
@@ -154,14 +131,12 @@ export default function MapViewer({ routes, selectedCourierId, liveCouriers }) {
               longitude={courier.location[0]}
               latitude={courier.location[1]}
               anchor="center"
-              style={{ transition: 'transform 0.5s linear' }} // Adds smooth gliding between WS ticks
+              style={{ transition: 'transform 0.5s linear' }}
             >
               <div
                 className="courier-marker"
                 style={{
                   borderColor: courier.color || 'var(--primary-accent)',
-                  // Optional: if you switch to a top-down icon, you can rotate it with the heading!
-                  // transform: `rotate(${courier.heading}deg)` 
                 }}
                 title={`${courier.name} - ${courier.speed_kmh} km/h`}
               >
