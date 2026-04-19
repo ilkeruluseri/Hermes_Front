@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { fetchFullRoute, completeStopRequest, saveRouteResult, requestBody } from '../services/routeService';
+import { fetchAutoDispatch, completeStopRequest, saveRouteResult, requestBody } from '../services/routeService';
 
 const ROUTE_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#aa3bff'];
 
@@ -33,7 +33,7 @@ export const useRouteStore = create((set, get) => ({
     set({ loading: true, error: null });
 
     try {
-      const data = await fetchFullRoute();
+      const data = await fetchAutoDispatch();
 
       let parsedRoutes = [];
       let parsedCouriers = [];
