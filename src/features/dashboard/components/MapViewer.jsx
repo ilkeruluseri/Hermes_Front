@@ -1,6 +1,7 @@
 import React from 'react';
 import Map, { Source, Layer, Marker } from 'react-map-gl/mapbox';
 import './MapViewer.css';
+import RouteComparisonCard from './RouteComparisonCard';
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
 
@@ -27,6 +28,26 @@ export default function MapViewer({ routes, selectedCourierId, liveCouriers }) {
     ? routes.find(r => r.id === `route-${selectedCourierId}` || r.vehicle_id === selectedCourierId)?.naiveGeometry
     : null;
 
+  const firstRoute = routesToRender?.[0];
+  let startPoint = 'Unknown Start';
+  let endPoint = 'Unknown End';
+
+  if (firstRoute?.stops?.length > 0) {
+    const firstStop = firstRoute.stops[0];
+    const lastStop = firstRoute.stops[firstRoute.stops.length - 1];
+
+    // Fallback chain: name -> address -> coordinates
+    startPoint = `${firstStop.latitude.toFixed(4)}, ${firstStop.longitude.toFixed(4)}`;
+    endPoint = `${lastStop.latitude.toFixed(4)}, ${lastStop.longitude.toFixed(4)}`;
+  } else if (firstRoute?.geometry?.geometry?.coordinates?.length > 0) {
+    // Ultimate fallback if stops array is empty but geometry exists
+    console.log("last fallback used");
+    const coords = firstRoute.geometry.geometry.coordinates;
+    startPoint = `${coords[0][1].toFixed(4)}, ${coords[0][0].toFixed(4)}`;
+    endPoint = `${coords[coords.length - 1][1].toFixed(4)}, ${coords[coords.length - 1][0].toFixed(4)}`;
+  }
+  console.log(`Start: ${startPoint}, End: ${endPoint}`)
+
   return (
     <div className="map-viewer-container">
       <Map
@@ -39,6 +60,14 @@ export default function MapViewer({ routes, selectedCourierId, liveCouriers }) {
         mapboxAccessToken={MAPBOX_TOKEN}
         style={{ width: '100%', height: '100%' }}
       >
+        <RouteComparisonCard
+          startPoint={startPoint}
+          endPoint={endPoint}
+          explanation="Taking the scenic coastal bypass avoids the main toll bridge."
+          timeSaved="12 mins"
+          kmsDifference="+2.5 km"
+          moneySaved="$4.50"
+        />
         {routesToRender && routesToRender.map((routeData, index) => (
           <React.Fragment key={`fragment-${routeData.id || index}`}>
             <Source
