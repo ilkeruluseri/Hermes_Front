@@ -29,13 +29,23 @@ export default function CourierCard({ courier, isSelected, onSelect }) {
         {courier.stops.map((stop, index) => {
           const isSevere = stop.severity === 'severe' || stop.will_miss_window;
           const isWarning = stop.expected_delay_min > 0 && !isSevere;
+          const isCompleted = stop.status === 'completed';
           
           return (
-            <div key={index} className={`timeline-item ${isSevere ? 'severe' : ''} ${isWarning ? 'warning' : ''}`}>
-              <div className="timeline-node"></div>
-              <div className="timeline-content">
-                <span className="stop-name">{stop.stop_name || 'Unknown Stop'}</span>
-                {stop.expected_delay_min > 0 ? (
+            <div key={index} className={`timeline-item ${isSevere ? 'severe' : ''} ${isWarning ? 'warning' : ''} ${isCompleted ? 'completed' : ''}`}>
+              <div className="timeline-node" style={{
+                background: isCompleted ? 'var(--success)' : '',
+                borderColor: isCompleted ? 'var(--success)' : ''
+              }}>
+                {isCompleted && <span style={{ color: 'white', fontSize: '8px', position: 'absolute', top: '-1px', left: '2px' }}>✓</span>}
+              </div>
+              <div className="timeline-content" style={{ opacity: isCompleted ? 0.6 : 1 }}>
+                <span className="stop-name" style={{ textDecoration: isCompleted ? 'line-through' : 'none' }}>
+                  {stop.stop_name || 'Unknown Stop'}
+                </span>
+                {isCompleted ? (
+                  <span className="stop-eta text-success">Completed</span>
+                ) : stop.expected_delay_min > 0 ? (
                   <span className={`stop-eta ${isSevere ? 'text-danger' : 'text-warning'}`}>
                     Delay: {stop.expected_delay_min} mins
                   </span>

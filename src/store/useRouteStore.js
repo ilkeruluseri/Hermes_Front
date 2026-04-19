@@ -69,7 +69,16 @@ export const useRouteStore = create((set, get) => ({
             } : null,
             currentPosition,
             vehicleType,
-            stops: (data.optimized_route || []).filter(stop => stop.vehicle_id === vr.vehicle_id)
+            stops: (data.optimized_route || [])
+              .filter(stop => stop.vehicle_id === vr.vehicle_id)
+              .sort((a, b) => {
+                if (vr.stop_names) {
+                  const idxA = vr.stop_names.indexOf(a.stop_name);
+                  const idxB = vr.stop_names.indexOf(b.stop_name);
+                  if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+                }
+                return a.stop_sequence - b.stop_sequence;
+              })
           };
         }).filter(r => r.geometry != null);
 
@@ -77,7 +86,14 @@ export const useRouteStore = create((set, get) => ({
         parsedCouriers = data.vehicle_routes.map((vr, index) => {
           const vehicleStops = (data.optimized_route || [])
             .filter(stop => stop.vehicle_id === vr.vehicle_id)
-            .sort((a, b) => a.stop_sequence - b.stop_sequence);
+            .sort((a, b) => {
+              if (vr.stop_names) {
+                const idxA = vr.stop_names.indexOf(a.stop_name);
+                const idxB = vr.stop_names.indexOf(b.stop_name);
+                if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+              }
+              return a.stop_sequence - b.stop_sequence;
+            });
 
           // Mock optimization metrics
           const timeSavedMin = Math.floor(Math.random() * 45) + 15; // 15 to 60 mins
@@ -159,7 +175,6 @@ export const useRouteStore = create((set, get) => ({
           coordinates: route.geometry.geometry.coordinates,
           color: route.color,
           stops: (route.stops || [])
-            .sort((a, b) => (a.optimized_position ?? 0) - (b.optimized_position ?? 0))
             .filter(s => s.latitude && s.longitude)
             .map(s => ({
               stop_id: s.stop_id,
@@ -264,23 +279,33 @@ export const useRouteStore = create((set, get) => ({
 
               // 3. Reorder stops by new_sequence (values are stop IDs).
               //    This keeps StopList, NextStopBanner, and stop markers in sync.
-              let finalCouriers = updatedCouriers;
-              if (reopt?.triggered && reopt.new_sequence?.length) {
-                const seqMap = new Map(
-                  reopt.new_sequence.map((stopId, idx) => [String(stopId), idx])
-                );
-                finalCouriers = updatedCouriers.map(courier => {
-                  if (courier.id === vehicleId) {
-                    const reordered = [...courier.stops].sort((a, b) => {
+              let finalCouriers = updatedCouriers.map(courier => {
+                if (courier.id === vehicleId) {
+                  const completedStops = courier.stops.filter(s => s.status === 'completed');
+                  const remainingStops = courier.stops.filter(s => s.status !== 'completed');
+                  
+                  let newStops = courier.stops;
+                  if (reopt?.triggered && reopt.new_sequence?.length) {
+                    const seqMap = new Map(
+                      reopt.new_sequence.map((stopId, idx) => [String(stopId), idx])
+                    );
+                    const remainingReordered = remainingStops.sort((a, b) => {
                       const ia = seqMap.has(a.stop_id) ? seqMap.get(a.stop_id) : Infinity;
                       const ib = seqMap.has(b.stop_id) ? seqMap.get(b.stop_id) : Infinity;
                       return ia - ib;
                     });
-                    return { ...courier, stops: reordered };
+                    // Keep completed stops at the top, then remaining stops in new order
+                    newStops = [...completedStops, ...remainingReordered];
                   }
-                  return courier;
-                });
-              }
+
+                  return { 
+                    ...courier, 
+                    stops: newStops,
+                    stopsRemaining: remainingStops.length // Update remaining stops count
+                  };
+                }
+                return courier;
+              });
 
               return { couriers: finalCouriers, routes: updatedRoutes };
             });
