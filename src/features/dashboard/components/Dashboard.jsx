@@ -222,14 +222,18 @@ export default function Dashboard() {
         </section>
 
         <div className="courier-view-demo-row">
-          <button
-            className="courier-view-demo-btn"
-            title="Courier's own navigation view — normally separate from dispatcher. Shown here for demo purposes."
-            disabled={!selectedCourierId}
-            onClick={() => navigate(`/courier/${selectedCourierId}`)}
-          >
-            Open Courier View {selectedCourierId ? `— Courier ${selectedCourierId}` : '(select a courier first)'}
-          </button>
+          <div className="courier-view-demo-wrap">
+            <button
+              className="courier-view-demo-btn"
+              disabled={!selectedCourierId}
+              onClick={() => navigate(`/courier/${selectedCourierId}`)}
+            >
+              Open Courier View {selectedCourierId ? `— Courier ${selectedCourierId}` : '(select a courier first)'}
+            </button>
+            <span className="courier-view-tooltip">
+              Courier's own navigation view — normally separate from dispatcher. Shown here for demo purposes.
+            </span>
+          </div>
         </div>
 
         <div className="map-and-fleet-container">

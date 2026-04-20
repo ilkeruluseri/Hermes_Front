@@ -522,6 +522,11 @@
   margin-bottom: 0.5rem;
 }
 
+.courier-view-demo-wrap {
+  position: relative;
+  display: inline-flex;
+}
+
 .courier-view-demo-btn {
   background: transparent;
   border: 1px solid var(--border-color);
@@ -541,4 +546,27 @@
 .courier-view-demo-btn:disabled {
   opacity: 0.4;
   cursor: default;
+}
+
+.courier-view-tooltip {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  right: 0;
+  background: var(--surface-color-light, #1e2130);
+  color: var(--text-secondary, #a0aec0);
+  border: 1px solid var(--border-color, #2d3748);
+  border-radius: 6px;
+  padding: 0.45rem 0.75rem;
+  font-size: 0.72rem;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity 0.1s ease, transform 0.1s ease;
+  z-index: 100;
+}
+
+.courier-view-demo-wrap:hover .courier-view-tooltip {
+  opacity: 1;
+  transform: translateY(0);
 }
