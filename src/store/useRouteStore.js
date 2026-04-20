@@ -18,6 +18,7 @@ export const useRouteStore = create((set, get) => ({
 
   // Live State
   liveCouriers: {}, // Stored as a dictionary for fast O(1) updates
+  _stopDelayMap: {}, // stop_id -> delay_min, generated at simulation start
   wsConnected: false,
   _wsRef: null, // Keep a private reference to the WebSocket instance
   isConnecting: false,
@@ -182,12 +183,23 @@ export const useRouteStore = create((set, get) => ({
 
       if (!listenOnly) {
         console.log("route: ", routes)
+
+        // Build stop delay map: 30% chance of 0-15 min delay, 70% on time
+        const stopDelayMap = {};
+        routes.forEach(route => {
+          (route.stops || []).forEach(s => {
+            stopDelayMap[String(s.stop_id)] = Math.random() < 0.3
+              ? parseFloat((Math.random() * 15).toFixed(1))
+              : 0.0;
+          });
+        });
+        set({ _stopDelayMap: stopDelayMap });
+
         const configMsg = {
           vehicles: routes.map((route) => ({
             courier_id: `courier-${route.vehicle_id}`,
             name: `Courier ${route.vehicle_id}`,
             vehicle_id: route.vehicle_id,
-            // Grab the raw coordinate array from your parsed geometry
             coordinates: route.geometry.geometry.coordinates,
             color: route.color,
             stops: (route.stops || [])
@@ -196,7 +208,8 @@ export const useRouteStore = create((set, get) => ({
                 stop_id: s.stop_id,
                 lat: s.latitude,
                 lon: s.longitude,
-                dwell_seconds: 30
+                dwell_seconds: 30,
+                delay_min: stopDelayMap[String(s.stop_id)]
               }))
           })),
           speed_kmh: 60,
@@ -281,7 +294,8 @@ export const useRouteStore = create((set, get) => ({
           return;
         }
 
-        completeStopRequest(data.stop_id, data.delay_min ?? null)
+        const delayMin = get()._stopDelayMap[String(data.stop_id)] ?? data.delay_min ?? null;
+        completeStopRequest(data.stop_id, delayMin)
           .then((response) => {
             const { stop, reopt } = response;
 
