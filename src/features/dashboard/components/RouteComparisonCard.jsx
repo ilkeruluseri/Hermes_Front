@@ -4,16 +4,15 @@ import './RouteComparisonCard.css';
 export default function RouteComparisonCard({ suggestion, onAccept, onReject, isProcessing }) {
   if (!suggestion) return null;
 
-  const { explanation, estimated_time_savings_min, previous_sequence, new_sequence, stop_name_map } = suggestion;
+  const { explanation, estimated_time_savings_min, previous_sequence, new_sequence, stop_name_map, risk_factors } = suggestion;
 
   const timeSavings = estimated_time_savings_min != null ? Math.round(estimated_time_savings_min) : null;
-
   const resolveName = (id) => stop_name_map?.[String(id)] ?? id;
 
-  // Show at most 4 stops per sequence to keep it compact
   const prevSeq = (previous_sequence?.slice(0, 4) ?? []).map(resolveName);
-  const newSeq = (new_sequence?.slice(0, 4) ?? []).map(resolveName);
+  const newSeq  = (new_sequence?.slice(0, 4)  ?? []).map(resolveName);
   const hasSequenceChange = prevSeq.length > 0 && newSeq.length > 0;
+  const hasRiskFactors = Array.isArray(risk_factors) && risk_factors.length > 0;
 
   return (
     <div className="route-card-container">
@@ -22,8 +21,20 @@ export default function RouteComparisonCard({ suggestion, onAccept, onReject, is
       </div>
 
       <p className="route-card-explanation">
-        {explanation || 'A smarter stop order was found based on current traffic and delay forecasts.'}
+        {explanation || 'A smarter stop order was found based on current conditions.'}
       </p>
+
+      {/* Why this change is needed — from backend risk_factors */}
+      {hasRiskFactors && (
+        <div className="route-card-risk-factors">
+          <span className="route-card-seq-label">Why this change</span>
+          <ul className="route-card-risk-list">
+            {risk_factors.map((factor, i) => (
+              <li key={i} className="route-card-risk-item">{factor}</li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       <div className="route-card-metrics">
         {timeSavings != null && (
@@ -49,18 +60,10 @@ export default function RouteComparisonCard({ suggestion, onAccept, onReject, is
       </div>
 
       <div className="route-card-actions">
-        <button
-          onClick={onReject}
-          disabled={isProcessing}
-          className="route-card-btn route-card-btn--secondary"
-        >
+        <button onClick={onReject} disabled={isProcessing} className="route-card-btn route-card-btn--secondary">
           Keep Current
         </button>
-        <button
-          onClick={onAccept}
-          disabled={isProcessing}
-          className="route-card-btn route-card-btn--primary"
-        >
+        <button onClick={onAccept} disabled={isProcessing} className="route-card-btn route-card-btn--primary">
           {isProcessing ? 'Applying…' : 'Apply New Route'}
         </button>
       </div>

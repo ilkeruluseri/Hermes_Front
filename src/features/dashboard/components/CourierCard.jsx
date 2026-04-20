@@ -1,6 +1,15 @@
 import React from 'react';
 import './CourierCard.css';
 
+function fmtTime(iso) {
+  if (!iso) return null;
+  try {
+    return new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+  } catch {
+    return null;
+  }
+}
+
 export default function CourierCard({ courier, isSelected, onSelect, hasSuggestion }) {
   const nextStopIndex = courier.stops.findIndex(s => s.status !== 'completed');
   const delayedCount = courier.stops.filter(
@@ -44,6 +53,19 @@ export default function CourierCard({ courier, isSelected, onSelect, hasSuggesti
           const isCompleted = stop.status === 'completed';
           const isNext = index === nextStopIndex;
 
+          const eta      = fmtTime(stop.estimated_arrival_time);
+          const winStart = fmtTime(stop.time_window_start);
+          const winEnd   = fmtTime(stop.time_window_end);
+          const hasWindow = winStart && winEnd;
+
+          // Determine window compliance when both ETA and window are available
+          let windowStatus = null;
+          if (eta && hasWindow && stop.estimated_arrival_time && stop.time_window_end) {
+            const arrivalMs = new Date(stop.estimated_arrival_time).getTime();
+            const windowEndMs = new Date(stop.time_window_end).getTime();
+            windowStatus = arrivalMs <= windowEndMs ? 'ok' : 'late';
+          }
+
           return (
             <div
               key={index}
@@ -62,14 +84,37 @@ export default function CourierCard({ courier, isSelected, onSelect, hasSuggesti
                   </span>
                   {isNext && <span className="next-stop-badge">NEXT</span>}
                 </div>
+
                 {isCompleted ? (
                   <span className="stop-eta text-success">Delivered</span>
-                ) : stop.expected_delay_min > 0 ? (
-                  <span className={`stop-eta ${isSevere ? 'text-danger' : 'text-warning'}`}>
-                    ~{stop.expected_delay_min} min delay expected
-                  </span>
                 ) : (
-                  <span className="stop-eta text-success">On time</span>
+                  <div className="stop-detail-row">
+                    {/* ETA chip */}
+                    {eta && (
+                      <span className={`stop-eta-chip ${windowStatus === 'late' ? 'stop-eta-chip--late' : ''}`}>
+                        ETA {eta}
+                      </span>
+                    )}
+
+                    {/* Time window chip */}
+                    {hasWindow && (
+                      <span className={`stop-window-chip ${windowStatus === 'ok' ? 'stop-window-chip--ok' : windowStatus === 'late' ? 'stop-window-chip--late' : ''}`}>
+                        {winStart}–{winEnd}
+                        {windowStatus === 'ok'   && ' ✓'}
+                        {windowStatus === 'late' && ' ⚠'}
+                      </span>
+                    )}
+
+                    {/* Fallback delay text when no ETA/window data */}
+                    {!eta && !hasWindow && stop.expected_delay_min > 0 && (
+                      <span className={`stop-eta ${isSevere ? 'text-danger' : 'text-warning'}`}>
+                        ~{stop.expected_delay_min} min delay
+                      </span>
+                    )}
+                    {!eta && !hasWindow && stop.expected_delay_min === 0 && (
+                      <span className="stop-eta text-success">On time</span>
+                    )}
+                  </div>
                 )}
               </div>
             </div>
