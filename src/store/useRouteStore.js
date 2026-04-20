@@ -21,6 +21,7 @@ export const useRouteStore = create((set, get) => ({
   wsConnected: false,
   _wsRef: null, // Keep a private reference to the WebSocket instance
   isConnecting: false,
+  isListenOnly: false,
 
   setSelectedCourier: (id) => set((state) => ({
     selectedCourierId: state.selectedCourierId === id ? null : id
@@ -142,17 +143,23 @@ export const useRouteStore = create((set, get) => ({
   },
 
   startSimulation: async (listenOnly = false) => {
-    const { isConnecting, wsConnected } = get();
+    const { isConnecting, wsConnected, isListenOnly, _wsRef } = get();
 
-    // SAFETY CHECK: If already connecting or connected, do nothing!
-    if (isConnecting || wsConnected) return;
+    // If already in listen-only mode and a real simulation is requested, close and restart
+    if (!listenOnly && wsConnected && isListenOnly) {
+      if (_wsRef?.readyState === WebSocket.OPEN) _wsRef.close();
+      set({ wsConnected: false, isConnecting: false, _wsRef: null });
+    } else if (isConnecting || wsConnected) {
+      // SAFETY CHECK: If already connecting or connected with real sim, do nothing!
+      return;
+    }
 
     // Always fetch fresh stop IDs before starting simulation
     if (!listenOnly) {
       await get().forceFetchData();
     }
 
-    const { routes, _wsRef } = get();
+    const { routes } = get();
 
     // Safety check
     if (routes.length === 0) return;
@@ -170,7 +177,7 @@ export const useRouteStore = create((set, get) => ({
 
     // 1. Send the config as soon as the connection opens (if not listen-only)
     ws.onopen = () => {
-      set({ wsConnected: true, isConnecting: false });
+      set({ wsConnected: true, isConnecting: false, isListenOnly: listenOnly });
 
       if (!listenOnly) {
         console.log("route: ", routes)
