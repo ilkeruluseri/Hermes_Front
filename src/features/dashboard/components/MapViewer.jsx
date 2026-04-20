@@ -128,7 +128,7 @@ export default function MapViewer({ routes, selectedCourierId, liveCouriers, pen
                     boxShadow: '0 0 4px rgba(0,0,0,0.5)',
                     cursor: 'pointer'
                   }}
-                  title={`${stop.stop_name || 'Stop'} ${stop.expected_delay_min > 0 ? `(Delay: ${stop.expected_delay_min}m)` : ''}`}
+                  title={`${stop.stop_name || 'Stop'}${stop.expected_delay_min > 0 ? ` — Delay: ~${stop.expected_delay_min}m` : ''}${stop.delay_probability != null ? ` (${Math.round(stop.delay_probability * 100)}% probability)` : ''}`}
                 />
               </Marker>
             ))}

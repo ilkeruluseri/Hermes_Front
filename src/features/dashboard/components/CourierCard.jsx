@@ -172,10 +172,22 @@ export default function CourierCard({ courier, isSelected, onSelect, hasSuggesti
                     {!eta && !hasWindow && stop.expected_delay_min > 0 && (
                       <span className={`stop-eta ${isSevere ? 'text-danger' : 'text-warning'}`}>
                         ~{stop.expected_delay_min} min delay
+                        {stop.delay_probability != null && (
+                          <span className="stop-prob-badge">
+                            {Math.round(stop.delay_probability * 100)}% likely
+                          </span>
+                        )}
                       </span>
                     )}
                     {!eta && !hasWindow && stop.expected_delay_min === 0 && (
-                      <span className="stop-eta text-success">On time</span>
+                      <span className="stop-eta text-success">
+                        On time
+                        {stop.delay_probability != null && stop.delay_probability > 0 && (
+                          <span className="stop-prob-badge stop-prob-badge--low">
+                            {Math.round(stop.delay_probability * 100)}% risk
+                          </span>
+                        )}
+                      </span>
                     )}
                   </div>
                 )}
