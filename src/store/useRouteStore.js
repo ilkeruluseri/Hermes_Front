@@ -320,7 +320,7 @@ export const useRouteStore = create((set, get) => ({
               const updatedCouriers = state.couriers.map(courier => {
                 if (courier.id === vehicleId) {
                   const completedStops = courier.stops.map(s =>
-                    s.stop_id === String(stop.id) ? { ...s, status: 'completed' } : s
+                    String(s.stop_id) === String(stop.id) ? { ...s, status: 'completed' } : s
                   );
                   const remainingCount = completedStops.filter(s => s.status !== 'completed').length;
                   return { ...courier, stops: completedStops, stopsRemaining: remainingCount };

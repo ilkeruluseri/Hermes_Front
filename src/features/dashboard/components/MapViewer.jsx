@@ -44,7 +44,7 @@ export default function MapViewer({ routes, selectedCourierId, liveCouriers, pen
 
   // 2. Filter live markers so they disappear if another courier is selected
   const liveCouriersToRender = selectedCourierId !== null
-    ? liveCouriers.filter(c => c.vehicle_id === selectedCourierId)
+    ? liveCouriers.filter(c => String(c.vehicle_id) === String(selectedCourierId))
     : liveCouriers;
 
   const naiveRouteToRender = selectedCourierId !== null

@@ -25,10 +25,10 @@ export default function CourierView() {
     fetchData();
   }, [fetchData]);
 
-  const courierData = couriers.find(c => c.id === courierId);
+  const courierData = couriers.find(c => String(c.id) === String(courierId));
 
   // Get this courier's pre-computed backend route geometry (same source as dispatcher map)
-  const backendRoute = routes.find(r => r.vehicle_id === courierId);
+  const backendRoute = routes.find(r => String(r.vehicle_id) === String(courierId));
   const backendGeometry = backendRoute?.geometry ?? null;
   const routeColor = backendRoute?.color ?? '#3b82f6';
 
