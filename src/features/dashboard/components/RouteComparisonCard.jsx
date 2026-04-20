@@ -6,10 +6,23 @@ export default function RouteComparisonCard({ suggestion, onAccept, onReject, is
 
   const { explanation, estimated_time_savings_min, estimated_delay_savings_min, delay_avoided_min, previous_sequence, new_sequence, stop_name_map, risk_factors } = suggestion;
 
+  // Extract cumulative delay value from explanation (e.g. "delay of 2.3 minutes")
+  const delayMatch = explanation?.match(/delay\s+of\s+([\d.]+)\s*min/i);
+  const parsedDelay = delayMatch ? parseFloat(delayMatch[1]) : null;
+
+  // estimated_time_savings_min from backend is often 0.0 — use delay value as fallback
   const rawSavings = estimated_time_savings_min || estimated_delay_savings_min || delay_avoided_min;
-  const parsedFromExplanation = explanation ? parseFloat(explanation.match(/(\d+(?:\.\d+)?)\s*min/)?.[1]) : null;
-  const savingsValue = rawSavings > 0 ? rawSavings : parsedFromExplanation;
-  const timeSavings = savingsValue != null && !isNaN(savingsValue) ? (Number.isInteger(savingsValue) ? savingsValue : savingsValue.toFixed(1)) : null;
+  const savingsValue = rawSavings > 0 ? rawSavings : parsedDelay;
+  const timeSavings = savingsValue != null && !isNaN(savingsValue) && savingsValue > 0
+    ? (Number.isInteger(savingsValue) ? savingsValue : savingsValue.toFixed(1))
+    : null;
+
+  // Clean explanation text: remove redundant "with estimated time savings of 0.0 minutes"
+  const cleanExplanation = explanation
+    ?.replace(/\s*with estimated time savings of 0+\.?0*\s*minutes?\.?/i, '.')
+    ?.replace(/\.\./g, '.')
+    ?.trim();
+
   const resolveName = (id) => stop_name_map?.[String(id)] ?? id;
 
   const prevSeq = (previous_sequence?.slice(0, 4) ?? []).map(resolveName);
@@ -24,7 +37,7 @@ export default function RouteComparisonCard({ suggestion, onAccept, onReject, is
       </div>
 
       <p className="route-card-explanation">
-        {explanation || 'A smarter stop order was found based on current conditions.'}
+        {cleanExplanation || 'A smarter stop order was found based on current conditions.'}
       </p>
 
       {/* Why this change is needed — from backend risk_factors */}

@@ -136,12 +136,12 @@ export default function Dashboard() {
                   <div className={`kpi-card ${kpiDelayClass(routeSummary.expected_total_delay_min)}`}>
                     <span className="kpi-icon-row">⏱ <span className="kpi-label">Expected Delay</span></span>
                     <div className="kpi-delay-rows">
-                      {routes.map(route => {
-                        const d = route.stats?.totalExpectedDelay ?? 0;
+                      {couriers.map(courier => {
+                        const d = courier.stats?.totalExpectedDelay ?? 0;
                         const mins = Number.isInteger(d) ? d : Math.round(d);
                         return (
-                          <div key={route.id} className="kpi-delay-row">
-                            <span className="kpi-delay-courier">Courier {route.vehicle_id}</span>
+                          <div key={courier.id} className="kpi-delay-row">
+                            <span className="kpi-delay-courier">{courier.name}</span>
                             <span className={`kpi-delay-val ${mins > 0 ? 'text-warning' : 'text-ok'}`}>{mins} min</span>
                           </div>
                         );
@@ -161,8 +161,8 @@ export default function Dashboard() {
                     const allStops = couriers.flatMap(c => c.stops || []);
                     const total = allStops.length;
                     const completed = allStops.filter(s => s.status === 'completed').length;
-                    const expectedOnTime = allStops.filter(s => !(s.expected_delay_min > 0) && !s.will_miss_window).length;
-                    const expectedDelayed = allStops.filter(s => s.expected_delay_min > 0 || s.will_miss_window).length;
+                    const expectedOnTime = allStops.filter(s => !s.will_miss_window).length;
+                    const expectedDelayed = allStops.filter(s => s.will_miss_window).length;
                     const pctOnTime = total > 0 ? Math.round((expectedOnTime / total) * 100) : 0;
                     const pctDelayed = total > 0 ? Math.round((expectedDelayed / total) * 100) : 0;
                     const cardClass = pctOnTime >= 80 ? 'kpi-ok' : pctOnTime >= 50 ? 'kpi-warning' : 'kpi-danger';
