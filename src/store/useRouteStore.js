@@ -147,8 +147,9 @@ export const useRouteStore = create((set, get) => ({
 
     // If already in listen-only mode and a real simulation is requested, close and restart
     if (!listenOnly && wsConnected && isListenOnly) {
+      if (_wsRef) _wsRef.onclose = null; // prevent onclose from resetting isConnecting
       if (_wsRef?.readyState === WebSocket.OPEN) _wsRef.close();
-      set({ wsConnected: false, isConnecting: false, _wsRef: null });
+      set({ wsConnected: false, isConnecting: true, _wsRef: null }); // isConnecting:true blocks useCourierWebSocket re-trigger
     } else if (isConnecting || wsConnected) {
       // SAFETY CHECK: If already connecting or connected with real sim, do nothing!
       return;
