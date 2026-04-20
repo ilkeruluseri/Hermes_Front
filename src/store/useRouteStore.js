@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { fetchAutoDispatch, completeStopRequest, requestBody, postSuggestionDecision } from '../services/routeService';
+import { fetchAutoDispatch, completeStopRequest, postSuggestionDecision } from '../services/routeService';
 
 const ROUTE_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#aa3bff'];
 
@@ -45,7 +45,6 @@ export const useRouteStore = create((set, get) => ({
           let naiveGeometry = null;
           let currentPosition = null;
           let vehicleType = 'car';
-          const vehicleTypes = ['car', 'truck', 'motorcycle'];
 
           if (vr.geometry && vr.geometry.coordinates && vr.geometry.coordinates.length > 0) {
             const coords = vr.geometry.coordinates;
@@ -307,6 +306,7 @@ export const useRouteStore = create((set, get) => ({
     try {
       // Use route_id from the reopt response, not vehicleId
       const decisionResponse = await postSuggestionDecision(suggestion.route_id, suggestionId, action);
+      console.log('[decision response]', action, JSON.stringify(decisionResponse));
 
       set((state) => {
         const newPendingSuggestions = { ...state.pendingSuggestions };
@@ -316,7 +316,9 @@ export const useRouteStore = create((set, get) => ({
           if (route.vehicle_id !== vehicleId) return route;
 
           if (action === 'accept') {
-            const acceptedGeometry = decisionResponse.geometry || suggestion.geometry;
+            let acceptedGeometry = decisionResponse.geometry || suggestion.geometry;
+            // Unwrap if backend returns a GeoJSON Feature instead of a raw Geometry
+            if (acceptedGeometry?.type === 'Feature') acceptedGeometry = acceptedGeometry.geometry;
             return {
               ...route,
               geometry: { type: 'Feature', geometry: acceptedGeometry },

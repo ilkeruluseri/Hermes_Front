@@ -83,17 +83,13 @@ export default function MapViewer({ routes, selectedCourierId, liveCouriers, pen
         style={{ width: '100%', height: '100%' }}
       >
         <RouteComparisonCard
-          isVisible={!!activeSuggestion}
-          explanation={activeSuggestion?.explanation || 'A new optimized route is available.'}
-          timeSaved={activeSuggestion ? `${activeSuggestion.estimated_time_savings_min || 0} mins` : ''}
+          suggestion={activeSuggestion}
           onAccept={handleAccept}
           onReject={handleReject}
           isProcessing={isProcessing}
         />
         {routesToRender && routesToRender.map((routeData, index) => (
           <React.Fragment key={`fragment-${routeData.id || index}`}>
-            {/* Skip normal route line for the selected courier when a suggestion is active — comparison layers render below */}
-            {!(activeSuggestion && routeData.vehicle_id === selectedCourierId) && (
             <Source
               id={`route-${routeData.id || index}`}
               type="geojson"
@@ -109,11 +105,10 @@ export default function MapViewer({ routes, selectedCourierId, liveCouriers, pen
                 paint={{
                   'line-color': routeData.color || '#eb5647',
                   'line-width': 5,
-                  'line-opacity': 0.8
+                  'line-opacity': (activeSuggestion && routeData.vehicle_id === selectedCourierId) ? 0 : 0.8
                 }}
               />
             </Source>
-            )}
 
             {routeData.stops && routeData.stops.map((stop, sIndex) => (
               <Marker
