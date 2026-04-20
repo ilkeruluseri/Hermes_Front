@@ -5,7 +5,8 @@ export const requestBody = {
   "assignments": [
     { "courier_id": 1, "stop_pool_ids": [1, 2, 3, 4, 5] },
     { "courier_id": 13, "stop_pool_ids": [32, 31, 33, 38] }
-  ]
+  ],
+  "demo_mode": true,
 }
 
 export const fetchAutoDispatch = async () => {
