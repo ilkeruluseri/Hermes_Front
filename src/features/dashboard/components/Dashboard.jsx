@@ -141,7 +141,7 @@ export default function Dashboard() {
                         const mins = Number.isInteger(d) ? d : Math.round(d);
                         return (
                           <div key={route.id} className="kpi-delay-row">
-                            <span className="kpi-delay-courier">Courier {route.id}</span>
+                            <span className="kpi-delay-courier">Courier {route.vehicle_id}</span>
                             <span className={`kpi-delay-val ${mins > 0 ? 'text-warning' : 'text-ok'}`}>{mins} min</span>
                           </div>
                         );
@@ -161,31 +161,30 @@ export default function Dashboard() {
                     const allStops = couriers.flatMap(c => c.stops || []);
                     const total = allStops.length;
                     const completed = allStops.filter(s => s.status === 'completed').length;
-                    const delayed = allStops.filter(s => s.status === 'completed' && (s.expected_delay_min > 0 || s.will_miss_window)).length;
-                    const atRisk = allStops.filter(s => s.status !== 'completed' && (s.expected_delay_min > 0 || s.will_miss_window)).length;
-                    const onTime = completed - delayed;
-                    const pctOnTime = total > 0 ? Math.round((onTime / total) * 100) : null;
-                    const pctDelayed = total > 0 ? Math.round((delayed / total) * 100) : null;
-                    const cardClass = pctOnTime === null ? 'kpi-ok' : pctOnTime >= 80 ? 'kpi-ok' : pctOnTime >= 50 ? 'kpi-warning' : 'kpi-danger';
+                    const expectedOnTime = allStops.filter(s => !(s.expected_delay_min > 0) && !s.will_miss_window).length;
+                    const expectedDelayed = allStops.filter(s => s.expected_delay_min > 0 || s.will_miss_window).length;
+                    const pctOnTime = total > 0 ? Math.round((expectedOnTime / total) * 100) : 0;
+                    const pctDelayed = total > 0 ? Math.round((expectedDelayed / total) * 100) : 0;
+                    const cardClass = pctOnTime >= 80 ? 'kpi-ok' : pctOnTime >= 50 ? 'kpi-warning' : 'kpi-danger';
                     return (
                       <div className={`kpi-card ${cardClass}`}>
                         <span className="kpi-icon-row">📦 <span className="kpi-label">Delivery Status</span></span>
                         <div className="kpi-delivery-rows">
+                          <div className="kpi-delivery-row">
+                            <span className="kpi-delivery-label">Total Stops</span>
+                            <span className="kpi-delivery-val text-ok">{total}</span>
+                          </div>
                           <div className="kpi-delivery-row">
                             <span className="kpi-delivery-label">Completed</span>
                             <span className="kpi-delivery-val text-ok">{completed}/{total}</span>
                           </div>
                           <div className="kpi-delivery-row">
                             <span className="kpi-delivery-label">On Time</span>
-                            <span className="kpi-delivery-val text-ok">{onTime}{pctOnTime !== null ? ` (${pctOnTime}%)` : ''}</span>
+                            <span className="kpi-delivery-val text-ok">{expectedOnTime} ({pctOnTime}%)</span>
                           </div>
                           <div className="kpi-delivery-row">
                             <span className="kpi-delivery-label">Delayed</span>
-                            <span className={`kpi-delivery-val ${delayed > 0 ? 'text-warning' : 'text-ok'}`}>{delayed}{pctDelayed !== null ? ` (${pctDelayed}%)` : ''}</span>
-                          </div>
-                          <div className="kpi-delivery-row">
-                            <span className="kpi-delivery-label">At Risk</span>
-                            <span className={`kpi-delivery-val ${atRisk > 0 ? 'text-danger' : 'text-ok'}`}>{atRisk} pending</span>
+                            <span className={`kpi-delivery-val ${expectedDelayed > 0 ? 'text-warning' : 'text-ok'}`}>{expectedDelayed} ({pctDelayed}%)</span>
                           </div>
                         </div>
                       </div>

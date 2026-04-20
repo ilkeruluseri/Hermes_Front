@@ -46,7 +46,7 @@ export const useRouteStore = create((set, get) => ({
         parsedRoutes = data.vehicle_routes.map((vr, index) => {
           let naiveGeometry = null;
           let currentPosition = null;
-          let vehicleType = 'car';
+          const vehicleType = vr.vehicle_type || 'car';
 
           if (vr.geometry && vr.geometry.coordinates && vr.geometry.coordinates.length > 0) {
             const coords = vr.geometry.coordinates;
