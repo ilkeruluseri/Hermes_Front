@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { fetchAutoDispatch, completeStopRequest, postSuggestionDecision } from '../services/routeService';
+import { fetchAutoDispatch, fetchCouriers, completeStopRequest, postSuggestionDecision, requestBody } from '../services/routeService';
 
 const ROUTE_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#aa3bff'];
 
@@ -35,7 +35,23 @@ export const useRouteStore = create((set, get) => ({
     set({ loading: true, error: null });
 
     try {
-      const data = await fetchAutoDispatch();
+      const [data, couriersRaw] = await Promise.all([
+        fetchAutoDispatch(),
+        fetchCouriers().catch(() => []),
+      ]);
+
+      // Build vehicle_id (0-indexed) → {courierId, vehicle_type, name} map
+      const courierById = {};
+      (couriersRaw || []).forEach(c => { courierById[c.id ?? c.courier_id] = c; });
+      const vehicleInfoMap = {};
+      (requestBody.assignments || []).forEach((assignment, index) => {
+        const courierInfo = courierById[assignment.courier_id] || {};
+        vehicleInfoMap[index] = {
+          courierId: assignment.courier_id,
+          vehicle_type: courierInfo.vehicle_type || 'car',
+          name: courierInfo.name || `Courier ${assignment.courier_id}`,
+        };
+      });
 
       let parsedRoutes = [];
       let parsedCouriers = [];
@@ -46,7 +62,8 @@ export const useRouteStore = create((set, get) => ({
         parsedRoutes = data.vehicle_routes.map((vr, index) => {
           let naiveGeometry = null;
           let currentPosition = null;
-          const vehicleType = vr.vehicle_type || 'car';
+          const info = vehicleInfoMap[index] || {};
+          const vehicleType = info.vehicle_type || 'car';
 
           if (vr.geometry && vr.geometry.coordinates && vr.geometry.coordinates.length > 0) {
             const coords = vr.geometry.coordinates;
@@ -59,7 +76,7 @@ export const useRouteStore = create((set, get) => ({
 
           return {
             id: `route-${vr.vehicle_id}`,
-            vehicle_id: vr.vehicle_id,
+            vehicle_id: info.courierId ?? vr.vehicle_id,
             color: ROUTE_COLORS[index % ROUTE_COLORS.length],
             geometry: vr.geometry ? {
               type: 'Feature',
@@ -102,10 +119,12 @@ export const useRouteStore = create((set, get) => ({
           const distanceSavedKm = (Math.random() * 10 + 2).toFixed(1); // 2.0 to 12.0 km
           const moneySaved = (distanceSavedKm * 1.5 + timeSavedMin * 0.5).toFixed(2); // Mock formula
 
+          const courierInfo = vehicleInfoMap[index] || {};
+          const courierId = courierInfo.courierId ?? vr.vehicle_id;
           return {
-            id: vr.vehicle_id,
-            name: `Courier ${vr.vehicle_id}`,
-            initials: `C${vr.vehicle_id}`,
+            id: courierId,
+            name: courierInfo.name || `Courier ${courierId}`,
+            initials: `C${courierId}`,
             currentStatus: vr.high_risk_stop_count > 0 ? 'At Risk' : 'En Route',
             stopsRemaining: vr.stop_count,
             routeColor: ROUTE_COLORS[index % ROUTE_COLORS.length],

@@ -4,9 +4,12 @@ import './RouteComparisonCard.css';
 export default function RouteComparisonCard({ suggestion, onAccept, onReject, isProcessing }) {
   if (!suggestion) return null;
 
-  const { explanation, estimated_time_savings_min, previous_sequence, new_sequence, stop_name_map, risk_factors } = suggestion;
+  const { explanation, estimated_time_savings_min, estimated_delay_savings_min, delay_avoided_min, previous_sequence, new_sequence, stop_name_map, risk_factors } = suggestion;
 
-  const timeSavings = estimated_time_savings_min != null ? Math.round(estimated_time_savings_min) : null;
+  const rawSavings = estimated_time_savings_min || estimated_delay_savings_min || delay_avoided_min;
+  const parsedFromExplanation = explanation ? parseFloat(explanation.match(/(\d+(?:\.\d+)?)\s*min/)?.[1]) : null;
+  const savingsValue = rawSavings > 0 ? rawSavings : parsedFromExplanation;
+  const timeSavings = savingsValue != null && !isNaN(savingsValue) ? (Number.isInteger(savingsValue) ? savingsValue : savingsValue.toFixed(1)) : null;
   const resolveName = (id) => stop_name_map?.[String(id)] ?? id;
 
   const prevSeq = (previous_sequence?.slice(0, 4) ?? []).map(resolveName);

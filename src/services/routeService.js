@@ -33,6 +33,13 @@ export const fetchAutoDispatch = async () => {
 };
 
 
+export const fetchCouriers = async () => {
+  const baseUrl = 'https://team-041.hackaton.sivas.edu.tr/api/v1';
+  const response = await fetch(`${baseUrl}/couriers`);
+  if (!response.ok) throw new Error(`Failed to fetch couriers: ${response.status}`);
+  return response.json();
+};
+
 export const completeStopRequest = async (stopId, actualDelayMin = null) => {
   const baseUrl = 'https://team-041.hackaton.sivas.edu.tr/api/v1';
 

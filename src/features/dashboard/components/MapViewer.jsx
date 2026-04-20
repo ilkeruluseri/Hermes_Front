@@ -7,8 +7,8 @@ const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
 
 const renderCourierIcon = (type) => {
   switch (type) {
-    case 'truck': return '🚚';
-    case 'motorcycle': return '🏍️';
+    case 'truck': return '🚛';
+    case 'motorcycle': return '🛵';
     case 'car': default: return '🚗';
     case 'van': return '🚐';
   }
