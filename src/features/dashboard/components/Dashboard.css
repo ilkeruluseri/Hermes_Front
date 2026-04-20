@@ -515,3 +515,30 @@
   align-items: center;
   padding: 0 1rem;
 }
+
+.courier-view-demo-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 0.5rem;
+}
+
+.courier-view-demo-btn {
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  padding: 0.4rem 1rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s;
+}
+
+.courier-view-demo-btn:not(:disabled):hover {
+  border-color: var(--primary-accent);
+  color: var(--primary-accent);
+}
+
+.courier-view-demo-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}

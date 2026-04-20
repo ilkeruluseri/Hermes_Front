@@ -39,7 +39,7 @@ export default function MapViewer({ routes, selectedCourierId, liveCouriers, pen
     }
   };
   const routesToRender = selectedCourierId !== null
-    ? routes.filter(r => r.id === `route-${selectedCourierId}` || r.vehicle_id === selectedCourierId)
+    ? routes.filter(r => String(r.vehicle_id) === String(selectedCourierId))
     : routes;
 
   // 2. Filter live markers so they disappear if another courier is selected
@@ -48,7 +48,7 @@ export default function MapViewer({ routes, selectedCourierId, liveCouriers, pen
     : liveCouriers;
 
   const naiveRouteToRender = selectedCourierId !== null
-    ? routes.find(r => r.id === `route-${selectedCourierId}` || r.vehicle_id === selectedCourierId)?.naiveGeometry
+    ? routes.find(r => String(r.vehicle_id) === String(selectedCourierId))?.naiveGeometry
     : null;
 
   const firstRoute = routesToRender?.[0];

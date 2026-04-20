@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import './Dashboard.css';
 import MapViewer from './MapViewer';
 import CourierList from './CourierList';
@@ -18,6 +19,7 @@ function kpiDelayClass(minutes) {
 }
 
 export default function Dashboard() {
+  const navigate = useNavigate();
   const {
     loading, error, fetchData,
     routes, couriers, packages,
@@ -218,6 +220,17 @@ export default function Dashboard() {
               )
           }
         </section>
+
+        <div className="courier-view-demo-row">
+          <button
+            className="courier-view-demo-btn"
+            title="Courier's own navigation view — normally separate from dispatcher. Shown here for demo purposes."
+            disabled={!selectedCourierId}
+            onClick={() => navigate(`/courier/${selectedCourierId}`)}
+          >
+            Open Courier View {selectedCourierId ? `— Courier ${selectedCourierId}` : '(select a courier first)'}
+          </button>
+        </div>
 
         <div className="map-and-fleet-container">
           <section className="dashboard-map-section">

@@ -1,5 +1,4 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
 import './CourierCard.css';
 
 function fmtTime(iso) {
@@ -46,7 +45,6 @@ function computeAllLiveETAs(liveCourier, stops) {
 }
 
 export default function CourierCard({ courier, isSelected, onSelect, hasSuggestion, liveCourier }) {
-  const navigate = useNavigate();
   const nextStopIndex = courier.stops.findIndex(s => s.status !== 'completed');
   const nextStop = nextStopIndex !== -1 ? courier.stops[nextStopIndex] : null;
   const delayedCount = courier.stops.filter(
@@ -197,19 +195,6 @@ export default function CourierCard({ courier, isSelected, onSelect, hasSuggesti
             </div>
           );
         })}
-      </div>
-
-      <div className="courier-card-view-row">
-        <button
-          className="courier-view-btn"
-          title="Courier's own navigation view — normally separate from dispatcher. Shown here for demo purposes."
-          onClick={(e) => {
-            e.stopPropagation();
-            navigate(`/courier/${courier.id}`);
-          }}
-        >
-          Open Courier View →
-        </button>
       </div>
     </div>
   );
