@@ -141,14 +141,21 @@ export const useRouteStore = create((set, get) => ({
     }
   },
 
-  startSimulation: () => {
-    const { routes, _wsRef, isConnecting, wsConnected } = get();
-
-    // Safety check
-    if (routes.length === 0) return;
+  startSimulation: async (listenOnly = false) => {
+    const { isConnecting, wsConnected } = get();
 
     // SAFETY CHECK: If already connecting or connected, do nothing!
     if (isConnecting || wsConnected) return;
+
+    // Always fetch fresh stop IDs before starting simulation
+    if (!listenOnly) {
+      await get().forceFetchData();
+    }
+
+    const { routes, _wsRef } = get();
+
+    // Safety check
+    if (routes.length === 0) return;
 
     // Mark as connecting so the UI can update
     set({ isConnecting: true });
@@ -161,33 +168,37 @@ export const useRouteStore = create((set, get) => ({
     // Connect to the new simulation endpoint
     const ws = new WebSocket('wss://team-041.hackaton.sivas.edu.tr/ws/simulation');
 
-    // 1. Send the config as soon as the connection opens
+    // 1. Send the config as soon as the connection opens (if not listen-only)
     ws.onopen = () => {
       set({ wsConnected: true, isConnecting: false });
 
-      console.log("route: ", routes)
-      const configMsg = {
-        vehicles: routes.map((route) => ({
-          courier_id: `courier-${route.vehicle_id}`,
-          name: `Courier ${route.vehicle_id}`,
-          vehicle_id: route.vehicle_id,
-          // Grab the raw coordinate array from your parsed geometry
-          coordinates: route.geometry.geometry.coordinates,
-          color: route.color,
-          stops: (route.stops || [])
-            .filter(s => s.latitude && s.longitude)
-            .map(s => ({
-              stop_id: s.stop_id,
-              lat: s.latitude,
-              lon: s.longitude,
-              dwell_seconds: 30
-            }))
-        })),
-        speed_kmh: 60,
-        loop: true
-      };
+      if (!listenOnly) {
+        console.log("route: ", routes)
+        const configMsg = {
+          vehicles: routes.map((route) => ({
+            courier_id: `courier-${route.vehicle_id}`,
+            name: `Courier ${route.vehicle_id}`,
+            vehicle_id: route.vehicle_id,
+            // Grab the raw coordinate array from your parsed geometry
+            coordinates: route.geometry.geometry.coordinates,
+            color: route.color,
+            stops: (route.stops || [])
+              .filter(s => s.latitude && s.longitude)
+              .map(s => ({
+                stop_id: s.stop_id,
+                lat: s.latitude,
+                lon: s.longitude,
+                dwell_seconds: 30
+              }))
+          })),
+          speed_kmh: 60,
+          loop: true
+        };
 
-      ws.send(JSON.stringify(configMsg));
+        ws.send(JSON.stringify(configMsg));
+      } else {
+        console.log("Connected to simulation in listen-only mode.");
+      }
     };
 
     // 2. Listen for the position updates
@@ -202,17 +213,16 @@ export const useRouteStore = create((set, get) => ({
         console.log(`Simulation started for ${data.vehicle_count} vehicles.`);
       }
 
-      // The new backend sends an array of couriers inside "position_update"
-      if (data.type === 'position_update') {
+      // Helper: apply a couriers array into liveCouriers (used by both message types below)
+      const applyCouriersUpdate = (couriers) => {
         set((state) => {
           let hasChanged = false;
           const patch = {};
 
-          data.couriers.forEach(courier => {
+          couriers.forEach(courier => {
             const existing = state.liveCouriers[courier.courier_id];
             const newLocation = [courier.longitude, courier.latitude];
 
-            // Only update if position actually changed (avoid unnecessary re-renders)
             if (
               !existing ||
               existing.location?.[0] !== newLocation[0] ||
@@ -228,10 +238,25 @@ export const useRouteStore = create((set, get) => ({
             }
           });
 
-          if (!hasChanged) return state; // No-op: skip re-render entirely
-
+          if (!hasChanged) return state;
           return { liveCouriers: { ...state.liveCouriers, ...patch } };
         });
+      };
+
+      // Sent once on first connect — renders current courier positions immediately
+      // without waiting for the next position_update tick.
+      if (data.type === 'sim_state') {
+        console.log(`[sim_state] running=${data.running}, couriers=${data.couriers?.length}`);
+        if (data.couriers?.length) {
+          applyCouriersUpdate(data.couriers);
+        }
+      }
+
+      // The backend sends an array of couriers inside "position_update"
+      if (data.type === 'position_update') {
+        if (data.couriers?.length) {
+          applyCouriersUpdate(data.couriers);
+        }
       }
 
       if (data.type === 'at_stop') {

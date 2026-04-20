@@ -41,7 +41,7 @@ function formatWaypoints(stops) {
 
 async function fetchChunk(stops) {
   const coords = formatWaypoints(stops);
-  const url = `${BASE_URL}/${coords}?steps=true&waypoints_per_route=true&geometries=geojson&language=tr&banner_instructions=true&access_token=${TOKEN}`;
+  const url = `${BASE_URL}/${coords}?steps=true&waypoints_per_route=true&geometries=geojson&banner_instructions=true&access_token=${TOKEN}`;
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Directions API error: ${res.status}`);
   return res.json();

@@ -10,7 +10,7 @@ export function useCourierWebSocket(courierId) {
 
   useEffect(() => {
     if (wsConnected || isConnecting || routes.length === 0) return;
-    startSimulation();
+    startSimulation(true);
   }, [wsConnected, isConnecting, routes.length, startSimulation]);
 
   const livePosition = liveCouriers[`courier-${courierId}`] ?? null;
