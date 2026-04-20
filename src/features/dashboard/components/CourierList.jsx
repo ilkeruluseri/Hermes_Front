@@ -7,8 +7,13 @@ export default function CourierList({ couriers, selectedCourierId, onSelectCouri
     return <div className="no-couriers text-center">No active couriers found.</div>;
   }
 
+  // If a courier is selected, show only that one
+  const filteredCouriers = selectedCourierId != null
+    ? couriers.filter(c => c.id === selectedCourierId)
+    : couriers;
+
   // Sort couriers so those with suggestions are at the top
-  const sortedCouriers = [...couriers].sort((a, b) => {
+  const sortedCouriers = [...filteredCouriers].sort((a, b) => {
     const aHas = !!pendingSuggestions[a.id];
     const bHas = !!pendingSuggestions[b.id];
     if (aHas && !bHas) return -1;
