@@ -332,14 +332,15 @@ export const useRouteStore = create((set, get) => ({
               let newPendingSuggestions = { ...state.pendingSuggestions };
               if (reopt?.triggered && reopt.suggestion_id) {
                 console.log(`Re-optimization suggestion generated for vehicle ${vehicleId}`);
-                // Capture the current route geometry as previous_geometry so MapViewer
-                // can render the old route in red when the suggestion card is shown
                 const currentRoute = state.routes.find(r => String(r.vehicle_id) === String(vehicleId));
                 const prevGeom = currentRoute?.geometry?.geometry ?? currentRoute?.geometry ?? null;
+                // Normalize to raw geometry (not Feature) so MapViewer can wrap consistently
+                const toRawGeom = (g) => (g?.type === 'Feature' ? g.geometry : g) ?? null;
                 newPendingSuggestions[vehicleId] = {
                   ...reopt,
                   vehicleId,
-                  previous_geometry: reopt.previous_geometry ?? prevGeom,
+                  previous_geometry: toRawGeom(reopt.previous_geometry ?? prevGeom),
+                  geometry: toRawGeom(reopt.geometry),
                 };
               }
 
