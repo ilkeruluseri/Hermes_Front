@@ -2,7 +2,7 @@ import React from 'react';
 import CourierCard from './CourierCard';
 import './CourierList.css';
 
-export default function CourierList({ couriers, selectedCourierId, onSelectCourier, pendingSuggestions = {} }) {
+export default function CourierList({ couriers, selectedCourierId, onSelectCourier, pendingSuggestions = {}, liveCouriers = {} }) {
   if (!couriers || couriers.length === 0) {
     return <div className="no-couriers text-center">No active couriers found.</div>;
   }
@@ -19,12 +19,13 @@ export default function CourierList({ couriers, selectedCourierId, onSelectCouri
   return (
     <div className="courier-list-grid">
       {sortedCouriers.map(courier => (
-        <CourierCard 
-          key={courier.id} 
-          courier={courier} 
-          isSelected={selectedCourierId === courier.id} 
+        <CourierCard
+          key={courier.id}
+          courier={courier}
+          isSelected={selectedCourierId === courier.id}
           onSelect={() => onSelectCourier(courier.id)}
           hasSuggestion={!!pendingSuggestions[courier.id]}
+          liveCourier={liveCouriers[`courier-${courier.id}`] ?? null}
         />
       ))}
     </div>

@@ -94,6 +94,15 @@
   margin-top: 0.25rem;
 }
 
+.stops-eta-live {
+  font-size: 0.72rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--primary-accent);
+  margin-top: 0.2rem;
+  letter-spacing: 0.03em;
+}
+
 .stops-timeline {
   display: flex;
   flex-direction: column;
@@ -221,6 +230,12 @@
   color: var(--danger);
   background: rgba(239, 68, 68, 0.08);
   border-color: rgba(239, 68, 68, 0.25);
+}
+
+.stop-eta-chip--live {
+  color: var(--primary-accent);
+  background: rgba(235, 86, 71, 0.08);
+  border-color: rgba(235, 86, 71, 0.3);
 }
 
 /* Time window chip — communicates compliance state at a glance */

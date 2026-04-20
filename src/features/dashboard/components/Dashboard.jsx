@@ -182,7 +182,7 @@ export default function Dashboard() {
                       </div>
                     </div>
                   ))
-                : <CourierList couriers={couriers} selectedCourierId={selectedCourierId} onSelectCourier={setSelectedCourier} pendingSuggestions={pendingSuggestions} />
+                : <CourierList couriers={couriers} selectedCourierId={selectedCourierId} onSelectCourier={setSelectedCourier} pendingSuggestions={pendingSuggestions} liveCouriers={liveCouriers} />
               }
             </div>
           </section>
