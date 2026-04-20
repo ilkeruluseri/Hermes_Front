@@ -5,6 +5,18 @@ import CourierList from './CourierList';
 import PackageList from './PackageList';
 import { useRouteStore } from '../../../store/useRouteStore';
 
+function kpiRiskClass(score) {
+  if (!score || score === 0) return 'kpi-ok';
+  if (score <= 3) return 'kpi-warning';
+  return 'kpi-danger';
+}
+
+function kpiDelayClass(minutes) {
+  if (!minutes || minutes < 10) return 'kpi-ok';
+  if (minutes < 30) return 'kpi-warning';
+  return 'kpi-danger';
+}
+
 export default function Dashboard() {
   const {
     loading, error, fetchData,
@@ -21,11 +33,16 @@ export default function Dashboard() {
   }, [fetchData, stopSimulation]);
 
   const activeCouriersList = Object.values(liveCouriers);
+  const pendingCount = Object.keys(pendingSuggestions).length;
+  const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
   return (
     <div className="dashboard-container">
       <header className="dashboard-page-header">
-        <h1>Live Dispatch Map</h1>
+        <div className="header-title-row">
+          <h1>Dispatch Center</h1>
+          <span className="header-time">{now}</span>
+        </div>
 
         {loading && (
           <div className="loading-bar-wrapper">
@@ -40,70 +57,99 @@ export default function Dashboard() {
           </div>
         )}
 
-        <div className="simulation-controls" style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-          <span style={{ fontWeight: 'bold', color: wsConnected ? '#10b981' : (isConnecting ? '#f59e0b' : '#ef4444') }}>
-            {wsConnected ? '🟢 Live' : (isConnecting ? '🟡 Connecting...' : '🔴 Offline')}
+        <div className="simulation-controls">
+          <span className={`live-status-badge ${wsConnected ? 'live-status--online' : isConnecting ? 'live-status--connecting' : 'live-status--offline'}`}>
+            <span className="live-dot" />
+            {wsConnected ? 'Live Tracking' : isConnecting ? 'Connecting…' : 'Tracking Off'}
           </span>
           <button
             onClick={startSimulation}
             disabled={!hasFetched || wsConnected || isConnecting}
-            style={{
-              padding: '8px 16px',
-              background: '#10b981',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: (wsConnected || isConnecting) ? 'not-allowed' : 'pointer',
-              opacity: (wsConnected || isConnecting) ? 0.6 : 1
-            }}
+            className="ctrl-btn ctrl-btn--start"
+            style={{ opacity: (wsConnected || isConnecting) ? 0.5 : 1 }}
           >
-            {isConnecting ? 'Starting...' : '▶ Start Sim'}
+            {isConnecting ? 'Starting…' : '▶ Start Live'}
           </button>
-
           <button
             onClick={stopSimulation}
             disabled={!wsConnected && !isConnecting}
-            style={{
-              padding: '8px 16px',
-              background: '#ef4444',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: (!wsConnected && !isConnecting) ? 'not-allowed' : 'pointer',
-              opacity: (!wsConnected && !isConnecting) ? 0.6 : 1
-            }}
+            className="ctrl-btn ctrl-btn--stop"
+            style={{ opacity: (!wsConnected && !isConnecting) ? 0.5 : 1 }}
           >
-            ■ Stop Sim
+            ■ End Session
           </button>
         </div>
       </header>
 
       <main className="dashboard-main">
+
+        {/* Alert strip — Gestalt figure/ground: bright signal on dark surface */}
+        {pendingCount > 0 && (
+          <div className="alert-strip alert-strip--suggestion">
+            <span className="alert-icon">💡</span>
+            <span className="alert-text">
+              <strong>{pendingCount} route suggestion{pendingCount > 1 ? 's' : ''} ready</strong>
+              {' '}— select a courier in the fleet panel to review and apply.
+            </span>
+          </div>
+        )}
+        {routeSummary?.severe_stop_count > 0 && (
+          <div className="alert-strip alert-strip--danger">
+            <span className="alert-icon">⚠</span>
+            <span className="alert-text">
+              <strong>{routeSummary.severe_stop_count} stop{routeSummary.severe_stop_count > 1 ? 's' : ''} at high risk</strong>
+              {' '}of missing the delivery window — check the map and courier timeline.
+            </span>
+          </div>
+        )}
+
+        {/* KPI row — semantic color borders for at-a-glance status */}
         <section className="dashboard-kpis">
           {loading
             ? Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="small-kpi-card skeleton-card">
+                <div key={i} className="kpi-card skeleton-card">
                   <span className="skeleton-line skeleton-label" />
                   <span className="skeleton-line skeleton-value" />
                 </div>
               ))
             : routeSummary && (
                 <>
-                  <div className="small-kpi-card">
-                    <span className="label">Overall Risk Score</span>
-                    <span className="value">{routeSummary.overall_risk_score}</span>
+                  <div className={`kpi-card ${kpiRiskClass(routeSummary.overall_risk_score)}`}>
+                    <span className="kpi-icon-row">🛡 <span className="kpi-label">Route Health</span></span>
+                    <span className="kpi-value">
+                      {routeSummary.overall_risk_score}
+                      <span className="kpi-scale">/10</span>
+                    </span>
+                    <span className="kpi-sub">
+                      {routeSummary.overall_risk_score === 0 ? 'No active risk factors' : `${routeSummary.overall_risk_score} risk factor${routeSummary.overall_risk_score > 1 ? 's' : ''} detected`}
+                    </span>
                   </div>
-                  <div className="small-kpi-card">
-                    <span className="label">Total Expected Delay</span>
-                    <span className="value">{routeSummary.expected_total_delay_min} min</span>
+
+                  <div className={`kpi-card ${kpiDelayClass(routeSummary.expected_total_delay_min)}`}>
+                    <span className="kpi-icon-row">⏱ <span className="kpi-label">Expected Delay</span></span>
+                    <span className="kpi-value">
+                      {routeSummary.expected_total_delay_min}
+                      <span className="kpi-unit"> min</span>
+                    </span>
+                    <span className="kpi-sub">cumulative across all routes</span>
                   </div>
-                  <div className="small-kpi-card">
-                    <span className="label">Severe Stops</span>
-                    <span className="value text-danger">{routeSummary.severe_stop_count}</span>
+
+                  <div className={`kpi-card ${routeSummary.severe_stop_count > 0 ? 'kpi-danger' : 'kpi-ok'}`}>
+                    <span className="kpi-icon-row">📍 <span className="kpi-label">At-Risk Stops</span></span>
+                    <span className="kpi-value">{routeSummary.severe_stop_count}</span>
+                    <span className="kpi-sub">
+                      {routeSummary.severe_stop_count === 0 ? 'All stops on schedule' : `${routeSummary.severe_stop_count} may miss delivery window`}
+                    </span>
                   </div>
-                  <div className="small-kpi-card">
-                    <span className="label">VRP Status</span>
-                    <span className="value">{routeSummary.vrp_status}</span>
+
+                  <div className={`kpi-card ${routeSummary.vrp_status === 'success' ? 'kpi-ok' : 'kpi-warning'}`}>
+                    <span className="kpi-icon-row">✓ <span className="kpi-label">Route Status</span></span>
+                    <span className="kpi-value kpi-value--text">
+                      {routeSummary.vrp_status === 'success' ? 'Optimized' : routeSummary.vrp_status}
+                    </span>
+                    <span className="kpi-sub">
+                      {routeSummary.vrp_status === 'success' ? 'Routes calculated & active' : 'Check route details'}
+                    </span>
                   </div>
                 </>
               )
@@ -119,7 +165,12 @@ export default function Dashboard() {
           </section>
 
           <section className="dashboard-couriers-section">
-            <h2 className="section-title">Active Fleet</h2>
+            <h2 className="section-title">
+              Active Fleet
+              {!loading && couriers.length > 0 && (
+                <span className="section-count">{couriers.length}</span>
+              )}
+            </h2>
             <div className="fleet-scroll-area">
               {loading
                 ? Array.from({ length: 4 }).map((_, i) => (
@@ -138,7 +189,7 @@ export default function Dashboard() {
         </div>
 
         <section className="dashboard-packages-section">
-          <h2 className="section-title">Global Manifest</h2>
+          <h2 className="section-title">Stop Manifest</h2>
           {loading
             ? Array.from({ length: 5 }).map((_, i) => (
                 <div key={i} className="skeleton-package-row">

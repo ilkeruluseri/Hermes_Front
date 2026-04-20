@@ -1,30 +1,41 @@
 .route-card-container {
-  /* Positioning it over the map */
   position: absolute;
   bottom: 24px;
   left: 24px;
   z-index: 10;
-  /* Ensures it sits on top of the mapbox canvas */
-
-  /* Transparency & Glass Effect */
-  background-color: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(8px);
-  /* Optional: Gives a nice frosted glass effect */
-  -webkit-backdrop-filter: blur(8px);
-  /* Safari support */
-
-  padding: 16px;
+  background-color: rgba(255, 255, 255, 0.93);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  padding: 14px 16px 16px;
   border-radius: 12px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-  border: 1px solid rgba(255, 255, 255, 0.4);
-  width: 240px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  width: 290px;
   font-family: system-ui, -apple-system, sans-serif;
 }
 
+/* Header badge — signals this is an actionable AI suggestion */
+.route-card-header {
+  margin-bottom: 10px;
+}
+
+.route-card-badge {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #7c3aed;
+  background: rgba(124, 58, 237, 0.1);
+  border: 1px solid rgba(124, 58, 237, 0.25);
+  border-radius: 4px;
+  padding: 2px 7px;
+}
+
 .route-card-explanation {
-  margin: 0 0 16px 0;
-  font-size: 14px;
-  color: #334155;
+  margin: 0 0 12px 0;
+  font-size: 13px;
+  color: #1e293b;
   line-height: 1.5;
   font-weight: 500;
 }
@@ -33,32 +44,112 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
+  margin-bottom: 14px;
 }
 
-.route-card-row {
+/* Time savings — prominent positive number */
+.route-card-savings-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  padding: 6px 8px;
+  background: rgba(22, 163, 74, 0.07);
+  border-radius: 6px;
+  border: 1px solid rgba(22, 163, 74, 0.2);
 }
 
-.route-card-label {
-  font-size: 13px;
-  color: #64748b;
-  display: flex;
-  align-items: center;
-  gap: 6px;
+.route-card-savings-label {
+  font-size: 12px;
+  color: #475569;
+  font-weight: 500;
 }
 
 .route-card-value-positive {
-  font-size: 14px;
-  font-weight: 600;
-  color: #16a34a;
-  /* Green */
+  font-size: 13px;
+  font-weight: 700;
+  color: #15803d;
 }
 
-.route-card-value-negative {
-  font-size: 14px;
+/* Stop sequence — Before/After comparison (Gestalt similarity: same shape, different color) */
+.route-card-sequence {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.route-card-seq-label {
+  font-size: 11px;
   font-weight: 600;
-  color: #ef4444;
-  /* Red */
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #94a3b8;
+  margin-bottom: 2px;
+}
+
+.route-card-seq-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.route-card-seq-tag {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 3px;
+  flex-shrink: 0;
+  margin-top: 1px;
+  letter-spacing: 0.03em;
+}
+
+.route-card-seq-tag--old {
+  background: rgba(239, 68, 68, 0.1);
+  color: #b91c1c;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.route-card-seq-tag--new {
+  background: rgba(22, 163, 74, 0.1);
+  color: #15803d;
+  border: 1px solid rgba(22, 163, 74, 0.2);
+}
+
+.route-card-seq-stops {
+  font-size: 11.5px;
+  line-height: 1.4;
+  flex: 1;
+}
+
+.route-card-seq-stops--old { color: #dc2626; }
+.route-card-seq-stops--new { color: #16a34a; font-weight: 600; }
+
+/* Actions — primary action on right, secondary on left (standard CTA placement) */
+.route-card-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.route-card-btn {
+  flex: 1;
+  padding: 8px 0;
+  border: none;
+  border-radius: 6px;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.1s;
+}
+
+.route-card-btn:disabled { cursor: not-allowed; opacity: 0.5; }
+.route-card-btn:not(:disabled):active { transform: scale(0.97); }
+
+.route-card-btn--secondary {
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+}
+
+.route-card-btn--primary {
+  background: #16a34a;
+  color: white;
 }

@@ -172,9 +172,49 @@
   font-weight: 500;
 }
 
+.stop-name-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+/* NEXT badge — Gestalt figure/ground: pops against muted stop names */
+.next-stop-badge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--primary-accent);
+  background: rgba(235, 86, 71, 0.12);
+  border: 1px solid rgba(235, 86, 71, 0.3);
+  border-radius: 4px;
+  padding: 1px 5px;
+  flex-shrink: 0;
+}
+
+.timeline-item.next .timeline-node {
+  border-color: var(--primary-accent);
+  box-shadow: 0 0 6px rgba(235, 86, 71, 0.5);
+}
+
 .stop-eta {
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   font-weight: 600;
+}
+
+/* Suggestion banner — uses warning color instead of red for non-urgent action */
+.suggestion-badge {
+  position: absolute;
+  top: 0; right: 0; left: 0;
+  background: rgba(245, 158, 11, 0.15);
+  border-bottom: 1px solid rgba(245, 158, 11, 0.35);
+  color: var(--warning);
+  font-size: 0.73rem;
+  font-weight: 600;
+  text-align: center;
+  padding: 4px 0;
+  z-index: 10;
+  letter-spacing: 0.02em;
 }
 
 .courier-card.selected {
