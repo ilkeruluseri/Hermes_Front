@@ -272,6 +272,15 @@ export const useRouteStore = create((set, get) => ({
         const vehicleId = parseInt(data.courier_id.replace('courier-', ''), 10);
         console.log(`Vehicle ${vehicleId} arrived at stop ${data.stop_id}`);
 
+        // Guard: stop_id must exist in current route state (stale simulation events cause 404)
+        const currentRoutes = get().routes;
+        const vehicleRoute = currentRoutes.find(r => r.vehicle_id === vehicleId);
+        const stopExists = vehicleRoute?.stops?.some(s => String(s.stop_id) === String(data.stop_id));
+        if (!stopExists) {
+          console.warn(`Stop ${data.stop_id} not in current route for vehicle ${vehicleId} — skipping (stale event)`);
+          return;
+        }
+
         completeStopRequest(data.stop_id, data.delay_min ?? null)
           .then((response) => {
             const { stop, reopt } = response;
