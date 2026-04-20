@@ -4,7 +4,7 @@ export const requestBody = {
   "date": "2026-04-19",
   "assignments": [
     { "courier_id": 1, "stop_pool_ids": [1, 2, 3, 4, 5] },
-    { "courier_id": 2, "stop_pool_ids": [6, 7, 8, 9, 10] }
+    { "courier_id": 13, "stop_pool_ids": [32, 31, 33, 38] }
   ]
 }
 

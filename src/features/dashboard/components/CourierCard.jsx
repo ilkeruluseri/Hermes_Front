@@ -20,13 +20,28 @@ function haversineKm(lon1, lat1, lon2, lat2) {
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-function computeLiveETA(liveCourier, nextStop) {
-  if (!liveCourier?.location || !nextStop?.latitude || !nextStop?.longitude) return null;
+const DWELL_MS = 30 * 1000;
+
+function computeAllLiveETAs(liveCourier, stops) {
+  if (!liveCourier?.location) return {};
   const [curLon, curLat] = liveCourier.location;
-  const distKm = haversineKm(curLon, curLat, nextStop.longitude, nextStop.latitude);
   const speedKmh = liveCourier.speed_kmh > 0 ? liveCourier.speed_kmh : 30;
-  const etaMs = Date.now() + (distKm / speedKmh) * 3600 * 1000;
-  return new Date(etaMs).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+  const etaMap = {};
+  let prevLon = curLon;
+  let prevLat = curLat;
+  let timeMs = Date.now();
+
+  stops.forEach(stop => {
+    if (stop.status === 'completed' || !stop.latitude || !stop.longitude) return;
+    const distKm = haversineKm(prevLon, prevLat, stop.longitude, stop.latitude);
+    timeMs += (distKm / speedKmh) * 3600 * 1000;
+    etaMap[String(stop.stop_id)] = new Date(timeMs).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+    timeMs += DWELL_MS;
+    prevLon = stop.longitude;
+    prevLat = stop.latitude;
+  });
+
+  return etaMap;
 }
 
 export default function CourierCard({ courier, isSelected, onSelect, hasSuggestion, liveCourier }) {
@@ -36,7 +51,8 @@ export default function CourierCard({ courier, isSelected, onSelect, hasSuggesti
     s => s.status !== 'completed' && s.expected_delay_min > 0
   ).length;
 
-  const liveETA = computeLiveETA(liveCourier, nextStop);
+  const liveETAMap = computeAllLiveETAs(liveCourier, courier.stops);
+  const liveETA = nextStop ? liveETAMap[String(nextStop.stop_id)] ?? null : null;
   const { optimizationMetrics: metrics } = courier;
 
   return (
@@ -94,27 +110,26 @@ export default function CourierCard({ courier, isSelected, onSelect, hasSuggesti
 
       <div className="stops-timeline">
         {courier.stops.map((stop, index) => {
-          const isSevere = stop.severity === 'severe' || stop.will_miss_window;
-          const isWarning = stop.expected_delay_min > 0 && !isSevere;
+          const isSevere = stop.risk_level === 'severe' || stop.risk_level === 'high';
+          const isWarning = !isSevere && (stop.will_miss_window || stop.expected_delay_min > 0);
           const isCompleted = stop.status === 'completed';
           const isNext = index === nextStopIndex;
 
-          // For the next stop, prefer the live computed ETA over the static one
-          const staticETA = fmtTime(stop.estimated_arrival_time);
-          const eta = isNext && liveETA ? liveETA : staticETA;
+          const liveStopETA = liveETAMap[String(stop.stop_id)];
+          const eta = liveStopETA ?? fmtTime(stop.estimated_arrival_time);
+          const isLive = !!liveStopETA;
 
           const winStart = fmtTime(stop.time_window_start);
           const winEnd   = fmtTime(stop.time_window_end);
           const hasWindow = winStart && winEnd;
 
           let windowStatus = null;
-          if (eta && hasWindow && stop.time_window_end) {
-            // For live ETA on next stop, compare directly
-            const etaMs = isNext && liveETA
-              ? Date.now() + 0  // already computed as future time, re-derive for comparison
-              : stop.estimated_arrival_time ? new Date(stop.estimated_arrival_time).getTime() : null;
+          if (hasWindow && stop.time_window_end) {
+            const refTime = stop.estimated_arrival_time
+              ? new Date(stop.estimated_arrival_time).getTime()
+              : null;
             const windowEndMs = new Date(stop.time_window_end).getTime();
-            if (etaMs !== null) windowStatus = etaMs <= windowEndMs ? 'ok' : 'late';
+            if (refTime !== null) windowStatus = refTime <= windowEndMs ? 'ok' : 'late';
           }
 
           return (
@@ -141,7 +156,7 @@ export default function CourierCard({ courier, isSelected, onSelect, hasSuggesti
                 ) : (
                   <div className="stop-detail-row">
                     {eta && (
-                      <span className={`stop-eta-chip ${isNext && liveETA ? 'stop-eta-chip--live' : ''} ${windowStatus === 'late' ? 'stop-eta-chip--late' : ''}`}>
+                      <span className={`stop-eta-chip ${isLive ? 'stop-eta-chip--live' : ''} ${windowStatus === 'late' ? 'stop-eta-chip--late' : ''}`}>
                         ETA {eta}
                       </span>
                     )}

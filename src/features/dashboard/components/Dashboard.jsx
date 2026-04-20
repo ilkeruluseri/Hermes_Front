@@ -5,9 +5,9 @@ import CourierList from './CourierList';
 import PackageList from './PackageList';
 import { useRouteStore } from '../../../store/useRouteStore';
 
-function kpiRiskClass(score) {
-  if (!score || score === 0) return 'kpi-ok';
-  if (score <= 3) return 'kpi-warning';
+function kpiHealthClass(healthScore) {
+  if (healthScore >= 8) return 'kpi-ok';
+  if (healthScore >= 5) return 'kpi-warning';
   return 'kpi-danger';
 }
 
@@ -114,16 +114,22 @@ export default function Dashboard() {
               ))
             : routeSummary && (
                 <>
-                  <div className={`kpi-card ${kpiRiskClass(routeSummary.overall_risk_score)}`}>
-                    <span className="kpi-icon-row">🛡 <span className="kpi-label">Route Health</span></span>
-                    <span className="kpi-value">
-                      {routeSummary.overall_risk_score}
-                      <span className="kpi-scale">/10</span>
-                    </span>
-                    <span className="kpi-sub">
-                      {routeSummary.overall_risk_score === 0 ? 'No active risk factors' : `${routeSummary.overall_risk_score} risk factor${routeSummary.overall_risk_score > 1 ? 's' : ''} detected`}
-                    </span>
-                  </div>
+                  {(() => {
+                    const riskScore = routeSummary.overall_risk_score ?? 0;
+                    const healthScore = Math.max(0, 10 - riskScore);
+                    return (
+                      <div className={`kpi-card ${kpiHealthClass(healthScore)}`}>
+                        <span className="kpi-icon-row">🛡 <span className="kpi-label">Route Health</span></span>
+                        <span className="kpi-value">
+                          {healthScore}
+                          <span className="kpi-scale">/10</span>
+                        </span>
+                        <span className="kpi-sub">
+                          {riskScore === 0 ? 'No active risk factors' : `${riskScore} risk factor${riskScore > 1 ? 's' : ''} detected`}
+                        </span>
+                      </div>
+                    );
+                  })()}
 
                   <div className={`kpi-card ${kpiDelayClass(routeSummary.expected_total_delay_min)}`}>
                     <span className="kpi-icon-row">⏱ <span className="kpi-label">Expected Delay</span></span>
