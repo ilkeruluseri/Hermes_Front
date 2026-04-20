@@ -301,53 +301,56 @@ export const useRouteStore = create((set, get) => ({
   },
 
   handleSuggestionDecision: async (vehicleId, suggestionId, action) => {
+    const suggestion = get().pendingSuggestions[vehicleId];
+    if (!suggestion) return;
+
     try {
-      await postSuggestionDecision(vehicleId, suggestionId, action);
+      // Use route_id from the reopt response, not vehicleId
+      const decisionResponse = await postSuggestionDecision(suggestion.route_id, suggestionId, action);
 
       set((state) => {
-        const suggestion = state.pendingSuggestions[vehicleId];
         const newPendingSuggestions = { ...state.pendingSuggestions };
         delete newPendingSuggestions[vehicleId];
 
-        if (action === 'reject' || !suggestion) {
-          return { pendingSuggestions: newPendingSuggestions };
-        }
-
-        // Apply accepted suggestion
         const updatedRoutes = state.routes.map(route => {
-          if (route.vehicle_id === vehicleId) {
+          if (route.vehicle_id !== vehicleId) return route;
+
+          if (action === 'accept') {
+            const acceptedGeometry = decisionResponse.geometry || suggestion.geometry;
             return {
               ...route,
-              geometry: { type: 'Feature', geometry: suggestion.geometry },
-              naiveGeometry: suggestion.previous_geometry
-                ? { type: 'Feature', geometry: suggestion.previous_geometry }
-                : route.naiveGeometry,
+              geometry: { type: 'Feature', geometry: acceptedGeometry },
             };
+          } else {
+            // Reject: restore previous_geometry as active route
+            if (suggestion.previous_geometry) {
+              return {
+                ...route,
+                geometry: { type: 'Feature', geometry: suggestion.previous_geometry },
+              };
+            }
+            return route;
           }
-          return route;
         });
 
-        const updatedCouriers = state.couriers.map(courier => {
-          if (courier.id === vehicleId && suggestion.new_sequence?.length) {
-            const completedStops = courier.stops.filter(s => s.status === 'completed');
-            const remainingStops = courier.stops.filter(s => s.status !== 'completed');
-            
-            const seqMap = new Map(
-              suggestion.new_sequence.map((stopId, idx) => [String(stopId), idx])
-            );
-            const remainingReordered = remainingStops.sort((a, b) => {
-              const ia = seqMap.has(a.stop_id) ? seqMap.get(a.stop_id) : Infinity;
-              const ib = seqMap.has(b.stop_id) ? seqMap.get(b.stop_id) : Infinity;
-              return ia - ib;
+        let updatedCouriers = state.couriers;
+        if (action === 'accept') {
+          const newSeq = decisionResponse.new_sequence || suggestion.new_sequence;
+          if (newSeq?.length) {
+            updatedCouriers = state.couriers.map(courier => {
+              if (courier.id !== vehicleId) return courier;
+              const completedStops = courier.stops.filter(s => s.status === 'completed');
+              const remainingStops = courier.stops.filter(s => s.status !== 'completed');
+              const seqMap = new Map(newSeq.map((stopId, idx) => [String(stopId), idx]));
+              const remainingReordered = remainingStops.sort((a, b) => {
+                const ia = seqMap.has(a.stop_id) ? seqMap.get(a.stop_id) : Infinity;
+                const ib = seqMap.has(b.stop_id) ? seqMap.get(b.stop_id) : Infinity;
+                return ia - ib;
+              });
+              return { ...courier, stops: [...completedStops, ...remainingReordered] };
             });
-
-            return {
-              ...courier,
-              stops: [...completedStops, ...remainingReordered]
-            };
           }
-          return courier;
-        });
+        }
 
         return {
           routes: updatedRoutes,

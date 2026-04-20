@@ -84,16 +84,16 @@ export default function MapViewer({ routes, selectedCourierId, liveCouriers, pen
       >
         <RouteComparisonCard
           isVisible={!!activeSuggestion}
-          explanation="A new optimized route is available to reduce expected delay."
+          explanation={activeSuggestion?.explanation || 'A new optimized route is available.'}
           timeSaved={activeSuggestion ? `${activeSuggestion.estimated_time_savings_min || 0} mins` : ''}
-          kmsDifference="-1.2 km"
-          moneySaved="$2.50"
           onAccept={handleAccept}
           onReject={handleReject}
           isProcessing={isProcessing}
         />
         {routesToRender && routesToRender.map((routeData, index) => (
           <React.Fragment key={`fragment-${routeData.id || index}`}>
+            {/* Skip normal route line for the selected courier when a suggestion is active — comparison layers render below */}
+            {!(activeSuggestion && routeData.vehicle_id === selectedCourierId) && (
             <Source
               id={`route-${routeData.id || index}`}
               type="geojson"
@@ -113,6 +113,7 @@ export default function MapViewer({ routes, selectedCourierId, liveCouriers, pen
                 }}
               />
             </Source>
+            )}
 
             {routeData.stops && routeData.stops.map((stop, sIndex) => (
               <Marker
@@ -171,7 +172,7 @@ export default function MapViewer({ routes, selectedCourierId, liveCouriers, pen
           );
         })}
 
-        {naiveRouteToRender && (
+        {!activeSuggestion && naiveRouteToRender && (
           <Source
             id="naive-route-source"
             type="geojson"
@@ -194,6 +195,28 @@ export default function MapViewer({ routes, selectedCourierId, liveCouriers, pen
           </Source>
         )}
 
+        {/* Previous route (old plan) — red/faded when suggestion is active */}
+        {activeSuggestion && activeSuggestion.previous_geometry && (
+          <Source
+            id="previous-route-source"
+            type="geojson"
+            data={{ type: 'Feature', geometry: activeSuggestion.previous_geometry }}
+          >
+            <Layer
+              id="previous-route-layer"
+              type="line"
+              layout={{ 'line-join': 'round', 'line-cap': 'round' }}
+              paint={{
+                'line-color': '#ef4444',
+                'line-width': 4,
+                'line-opacity': 0.5,
+                'line-dasharray': [2, 2]
+              }}
+            />
+          </Source>
+        )}
+
+        {/* New suggested route — bright green when suggestion is active */}
         {activeSuggestion && activeSuggestion.geometry && (
           <Source
             id="suggested-route-source"
@@ -203,15 +226,11 @@ export default function MapViewer({ routes, selectedCourierId, liveCouriers, pen
             <Layer
               id="suggested-route-layer"
               type="line"
-              layout={{
-                'line-join': 'round',
-                'line-cap': 'round'
-              }}
+              layout={{ 'line-join': 'round', 'line-cap': 'round' }}
               paint={{
                 'line-color': '#10b981',
                 'line-width': 6,
-                'line-opacity': 0.9,
-                'line-dasharray': [2, 1.5]
+                'line-opacity': 0.9
               }}
             />
           </Source>
