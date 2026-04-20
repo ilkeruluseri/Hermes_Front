@@ -63,7 +63,7 @@ export default function Dashboard() {
             {wsConnected ? 'Live Tracking' : isConnecting ? 'Connecting…' : 'Tracking Off'}
           </span>
           <button
-            onClick={startSimulation}
+            onClick={() => startSimulation(false)}
             disabled={!hasFetched || wsConnected || isConnecting}
             className="ctrl-btn ctrl-btn--start"
             style={{ opacity: (wsConnected || isConnecting) ? 0.5 : 1 }}
