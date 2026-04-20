@@ -135,3 +135,17 @@
 .text-danger { color: var(--danger); font-weight: 600; }
 .text-warning { color: var(--warning); font-weight: 600; }
 .font-mono { font-family: 'ui-monospace', monospace; }
+
+.loading-state,
+.error-state,
+.empty-chart-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  min-height: 120px;
+  color: var(--text-tertiary);
+  font-size: 0.95rem;
+}
+
+.error-state { color: var(--danger); }
