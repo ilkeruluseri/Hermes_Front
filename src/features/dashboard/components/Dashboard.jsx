@@ -156,10 +156,17 @@ export default function Dashboard() {
                     return (
                       <div className={`kpi-card ${atRiskCount > 0 ? 'kpi-danger' : 'kpi-ok'}`}>
                         <span className="kpi-icon-row">📍 <span className="kpi-label">Delayed Stops</span></span>
-                        <span className="kpi-value">{atRiskCount}</span>
-                        <span className="kpi-sub">
-                          {atRiskCount === 0 ? 'All stops on schedule' : `${atRiskCount} stop${atRiskCount > 1 ? 's' : ''} need attention`}
-                        </span>
+                        <div className="kpi-delay-rows">
+                          {couriers.map(courier => {
+                            const count = (courier.stops || []).filter(s => s.severity !== 'on-time' && s.status !== 'completed').length;
+                            return (
+                              <div key={courier.id} className="kpi-delay-row">
+                                <span className="kpi-delay-courier">{courier.name}</span>
+                                <span className={`kpi-delay-val ${count > 0 ? 'text-warning' : 'text-ok'}`}>{count}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
                       </div>
                     );
                   })()}

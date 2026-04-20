@@ -19,7 +19,7 @@ export default function RouteComparisonCard({ suggestion, onAccept, onReject, is
 
   // Clean explanation text: remove redundant "with estimated time savings of 0.0 minutes"
   const cleanExplanation = explanation
-    ?.replace(/\s*with estimated time savings of 0+\.?0*\s*minutes?\.?/i, '.')
+    ?.replace(/\s*(?:with|and)\s+estimated time savings of 0+\.?0*\s*minutes?\.?/i, '.')
     ?.replace(/\.\./g, '.')
     ?.trim();
 
