@@ -117,15 +117,17 @@ export default function Dashboard() {
                   {(() => {
                     const riskScore = routeSummary.overall_risk_score ?? 0;
                     const healthScore = Math.max(0, 10 - riskScore);
+                    const healthScoreDisplay = Number.isInteger(healthScore) ? healthScore : healthScore.toFixed(2);
+                    const riskScoreDisplay = Number.isInteger(riskScore) ? riskScore : riskScore.toFixed(2);
                     return (
                       <div className={`kpi-card ${kpiHealthClass(healthScore)}`}>
                         <span className="kpi-icon-row">🛡 <span className="kpi-label">Route Health</span></span>
                         <span className="kpi-value">
-                          {healthScore}
+                          {healthScoreDisplay}
                           <span className="kpi-scale">/10</span>
                         </span>
                         <span className="kpi-sub">
-                          {riskScore === 0 ? 'No active risk factors' : `${riskScore} risk factor${riskScore > 1 ? 's' : ''} detected`}
+                          {riskScore === 0 ? 'No active risk factors' : `${riskScoreDisplay} risk factor${riskScore > 1 ? 's' : ''} detected`}
                         </span>
                       </div>
                     );
@@ -133,11 +135,18 @@ export default function Dashboard() {
 
                   <div className={`kpi-card ${kpiDelayClass(routeSummary.expected_total_delay_min)}`}>
                     <span className="kpi-icon-row">⏱ <span className="kpi-label">Expected Delay</span></span>
-                    <span className="kpi-value">
-                      {routeSummary.expected_total_delay_min}
-                      <span className="kpi-unit"> min</span>
-                    </span>
-                    <span className="kpi-sub">cumulative across all routes</span>
+                    <div className="kpi-delay-rows">
+                      {routes.map(route => {
+                        const d = route.stats?.totalExpectedDelay ?? 0;
+                        const mins = Number.isInteger(d) ? d : Math.round(d);
+                        return (
+                          <div key={route.id} className="kpi-delay-row">
+                            <span className="kpi-delay-courier">Courier {route.id}</span>
+                            <span className={`kpi-delay-val ${mins > 0 ? 'text-warning' : 'text-ok'}`}>{mins} min</span>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
 
                   <div className={`kpi-card ${routeSummary.severe_stop_count > 0 ? 'kpi-danger' : 'kpi-ok'}`}>
@@ -147,6 +156,41 @@ export default function Dashboard() {
                       {routeSummary.severe_stop_count === 0 ? 'All stops on schedule' : `${routeSummary.severe_stop_count} may miss delivery window`}
                     </span>
                   </div>
+
+                  {(() => {
+                    const allStops = couriers.flatMap(c => c.stops || []);
+                    const total = allStops.length;
+                    const completed = allStops.filter(s => s.status === 'completed').length;
+                    const delayed = allStops.filter(s => s.status === 'completed' && (s.expected_delay_min > 0 || s.will_miss_window)).length;
+                    const atRisk = allStops.filter(s => s.status !== 'completed' && (s.expected_delay_min > 0 || s.will_miss_window)).length;
+                    const onTime = completed - delayed;
+                    const pctOnTime = total > 0 ? Math.round((onTime / total) * 100) : null;
+                    const pctDelayed = total > 0 ? Math.round((delayed / total) * 100) : null;
+                    const cardClass = pctOnTime === null ? 'kpi-ok' : pctOnTime >= 80 ? 'kpi-ok' : pctOnTime >= 50 ? 'kpi-warning' : 'kpi-danger';
+                    return (
+                      <div className={`kpi-card ${cardClass}`}>
+                        <span className="kpi-icon-row">📦 <span className="kpi-label">Delivery Status</span></span>
+                        <div className="kpi-delivery-rows">
+                          <div className="kpi-delivery-row">
+                            <span className="kpi-delivery-label">Completed</span>
+                            <span className="kpi-delivery-val text-ok">{completed}/{total}</span>
+                          </div>
+                          <div className="kpi-delivery-row">
+                            <span className="kpi-delivery-label">On Time</span>
+                            <span className="kpi-delivery-val text-ok">{onTime}{pctOnTime !== null ? ` (${pctOnTime}%)` : ''}</span>
+                          </div>
+                          <div className="kpi-delivery-row">
+                            <span className="kpi-delivery-label">Delayed</span>
+                            <span className={`kpi-delivery-val ${delayed > 0 ? 'text-warning' : 'text-ok'}`}>{delayed}{pctDelayed !== null ? ` (${pctDelayed}%)` : ''}</span>
+                          </div>
+                          <div className="kpi-delivery-row">
+                            <span className="kpi-delivery-label">At Risk</span>
+                            <span className={`kpi-delivery-val ${atRisk > 0 ? 'text-danger' : 'text-ok'}`}>{atRisk} pending</span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
 
                   <div className={`kpi-card ${routeSummary.vrp_status === 'success' ? 'kpi-ok' : 'kpi-warning'}`}>
                     <span className="kpi-icon-row">✓ <span className="kpi-label">Route Status</span></span>

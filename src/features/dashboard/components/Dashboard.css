@@ -264,6 +264,47 @@
   line-height: 1.3;
 }
 
+.kpi-delay-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.kpi-delay-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.82rem;
+}
+
+.kpi-delay-courier {
+  color: var(--text-tertiary);
+}
+
+.kpi-delay-val.text-warning { color: var(--warning); font-weight: 600; }
+.kpi-delay-val.text-ok      { color: var(--success); font-weight: 600; }
+
+.kpi-delivery-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.kpi-delivery-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.82rem;
+}
+
+.kpi-delivery-label { color: var(--text-tertiary); }
+.kpi-delivery-val { font-weight: 600; }
+.kpi-delivery-val.text-ok     { color: var(--success); }
+.kpi-delivery-val.text-warning { color: var(--warning); }
+.kpi-delivery-val.text-danger  { color: var(--danger, #ef4444); }
+
 /* Section count badge (Gestalt proximity — counts belong with section titles) */
 .section-count {
   display: inline-flex;

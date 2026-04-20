@@ -184,14 +184,11 @@ export const useRouteStore = create((set, get) => ({
       if (!listenOnly) {
         console.log("route: ", routes)
 
-        // Build stop delay map: 30% chance of 0-15 min delay, 70% on time
+        // Build delay map from optimized_route expected_delay_min values
+        const { packages } = get();
         const stopDelayMap = {};
-        routes.forEach(route => {
-          (route.stops || []).forEach(s => {
-            stopDelayMap[String(s.stop_id)] = Math.random() < 0.3
-              ? parseFloat((Math.random() * 15).toFixed(1))
-              : 0.0;
-          });
+        (packages || []).forEach(stop => {
+          stopDelayMap[String(stop.stop_id)] = stop.expected_delay_min ?? 0;
         });
         set({ _stopDelayMap: stopDelayMap });
 
@@ -209,7 +206,7 @@ export const useRouteStore = create((set, get) => ({
                 lat: s.latitude,
                 lon: s.longitude,
                 dwell_seconds: 30,
-                delay_min: stopDelayMap[String(s.stop_id)]
+                delay_min: stopDelayMap[String(s.stop_id)] ?? 0
               }))
           })),
           speed_kmh: 60,
