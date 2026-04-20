@@ -93,12 +93,14 @@ export default function Dashboard() {
             </span>
           </div>
         )}
-        {routeSummary?.severe_stop_count > 0 && (
+        {couriers.flatMap(c => c.stops || []).filter(s => s.severity !== 'on-time' && s.status !== 'completed').length > 0 && (
           <div className="alert-strip alert-strip--danger">
             <span className="alert-icon">⚠</span>
             <span className="alert-text">
-              <strong>{routeSummary.severe_stop_count} stop{routeSummary.severe_stop_count > 1 ? 's' : ''} at high risk</strong>
-              {' '}of missing the delivery window — check the map and courier timeline.
+              {(() => {
+                const delayedCount = couriers.flatMap(c => c.stops || []).filter(s => s.severity !== 'on-time' && s.status !== 'completed').length;
+                return <><strong>{delayedCount} stop{delayedCount > 1 ? 's' : ''} with delays</strong>{' '}— check the map and courier timeline.</>;
+              })()}
             </span>
           </div>
         )}
@@ -149,13 +151,18 @@ export default function Dashboard() {
                     </div>
                   </div>
 
-                  <div className={`kpi-card ${routeSummary.severe_stop_count > 0 ? 'kpi-danger' : 'kpi-ok'}`}>
-                    <span className="kpi-icon-row">📍 <span className="kpi-label">At-Risk Stops</span></span>
-                    <span className="kpi-value">{routeSummary.severe_stop_count}</span>
-                    <span className="kpi-sub">
-                      {routeSummary.severe_stop_count === 0 ? 'All stops on schedule' : `${routeSummary.severe_stop_count} may miss delivery window`}
-                    </span>
-                  </div>
+                  {(() => {
+                    const atRiskCount = couriers.flatMap(c => c.stops || []).filter(s => s.severity !== 'on-time' && s.status !== 'completed').length;
+                    return (
+                      <div className={`kpi-card ${atRiskCount > 0 ? 'kpi-danger' : 'kpi-ok'}`}>
+                        <span className="kpi-icon-row">📍 <span className="kpi-label">Delayed Stops</span></span>
+                        <span className="kpi-value">{atRiskCount}</span>
+                        <span className="kpi-sub">
+                          {atRiskCount === 0 ? 'All stops on schedule' : `${atRiskCount} stop${atRiskCount > 1 ? 's' : ''} need attention`}
+                        </span>
+                      </div>
+                    );
+                  })()}
 
                   {(() => {
                     const allStops = couriers.flatMap(c => c.stops || []);
