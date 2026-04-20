@@ -239,7 +239,7 @@ export const useRouteStore = create((set, get) => ({
         const vehicleId = parseInt(data.courier_id.replace('courier-', ''), 10);
         console.log(`Vehicle ${vehicleId} arrived at stop ${data.stop_id}`);
 
-        completeStopRequest(data.stop_id)
+        completeStopRequest(data.stop_id, data.delay_min ?? null)
           .then((response) => {
             const { stop, reopt } = response;
 
@@ -263,7 +263,25 @@ export const useRouteStore = create((set, get) => ({
                 newPendingSuggestions[vehicleId] = { ...reopt, vehicleId };
               }
 
-              return { couriers: updatedCouriers, pendingSuggestions: newPendingSuggestions };
+              // 3. Recompute routeSummary from remaining (non-completed) stops
+              let updatedRouteSummary = state.routeSummary;
+              if (state.routeSummary) {
+                if (response.route_summary) {
+                  updatedRouteSummary = response.route_summary;
+                } else {
+                  const allStops = updatedCouriers.flatMap(c => c.stops);
+                  const pendingStops = allStops.filter(s => s.status !== 'completed');
+                  const newDelay = pendingStops.reduce((sum, s) => sum + (s.expected_delay_min || 0), 0);
+                  const newSevere = pendingStops.filter(s => s.risk_level === 'severe' || s.risk_level === 'high').length;
+                  updatedRouteSummary = {
+                    ...state.routeSummary,
+                    expected_total_delay_min: Math.round(newDelay * 10) / 10,
+                    severe_stop_count: newSevere,
+                  };
+                }
+              }
+
+              return { couriers: updatedCouriers, pendingSuggestions: newPendingSuggestions, routeSummary: updatedRouteSummary };
             });
           })
           .catch((error) => {
@@ -308,6 +326,30 @@ export const useRouteStore = create((set, get) => ({
       const decisionResponse = await postSuggestionDecision(suggestion.route_id, suggestionId, action);
       console.log('[decision response]', action, JSON.stringify(decisionResponse));
 
+      // Compute accepted geometry and reordered stops before set() so we can use them for reroute
+      let acceptedGeometry = null;
+      let rerouteStops = null;
+
+      if (action === 'accept') {
+        acceptedGeometry = decisionResponse.geometry || suggestion.geometry;
+        if (acceptedGeometry?.type === 'Feature') acceptedGeometry = acceptedGeometry.geometry;
+
+        const newSeq = decisionResponse.new_sequence || suggestion.new_sequence;
+        const currentCourier = get().couriers.find(c => c.id === vehicleId);
+        if (currentCourier && newSeq?.length) {
+          const remaining = currentCourier.stops.filter(s => s.status !== 'completed');
+          const seqMap = new Map(newSeq.map((stopId, idx) => [String(stopId), idx]));
+          rerouteStops = remaining
+            .sort((a, b) => {
+              const ia = seqMap.has(a.stop_id) ? seqMap.get(a.stop_id) : Infinity;
+              const ib = seqMap.has(b.stop_id) ? seqMap.get(b.stop_id) : Infinity;
+              return ia - ib;
+            })
+            .filter(s => s.latitude && s.longitude)
+            .map(s => ({ stop_id: String(s.stop_id), lat: s.latitude, lon: s.longitude, dwell_seconds: 30 }));
+        }
+      }
+
       set((state) => {
         const newPendingSuggestions = { ...state.pendingSuggestions };
         delete newPendingSuggestions[vehicleId];
@@ -315,51 +357,43 @@ export const useRouteStore = create((set, get) => ({
         const updatedRoutes = state.routes.map(route => {
           if (route.vehicle_id !== vehicleId) return route;
 
-          if (action === 'accept') {
-            let acceptedGeometry = decisionResponse.geometry || suggestion.geometry;
-            // Unwrap if backend returns a GeoJSON Feature instead of a raw Geometry
-            if (acceptedGeometry?.type === 'Feature') acceptedGeometry = acceptedGeometry.geometry;
-            return {
-              ...route,
-              geometry: { type: 'Feature', geometry: acceptedGeometry },
-            };
-          } else {
-            // Reject: restore previous_geometry as active route
-            if (suggestion.previous_geometry) {
-              return {
-                ...route,
-                geometry: { type: 'Feature', geometry: suggestion.previous_geometry },
-              };
-            }
-            return route;
+          if (action === 'accept' && acceptedGeometry) {
+            return { ...route, geometry: { type: 'Feature', geometry: acceptedGeometry } };
+          } else if (action === 'reject' && suggestion.previous_geometry) {
+            return { ...route, geometry: { type: 'Feature', geometry: suggestion.previous_geometry } };
           }
+          return route;
         });
 
         let updatedCouriers = state.couriers;
-        if (action === 'accept') {
-          const newSeq = decisionResponse.new_sequence || suggestion.new_sequence;
-          if (newSeq?.length) {
-            updatedCouriers = state.couriers.map(courier => {
-              if (courier.id !== vehicleId) return courier;
-              const completedStops = courier.stops.filter(s => s.status === 'completed');
-              const remainingStops = courier.stops.filter(s => s.status !== 'completed');
-              const seqMap = new Map(newSeq.map((stopId, idx) => [String(stopId), idx]));
-              const remainingReordered = remainingStops.sort((a, b) => {
-                const ia = seqMap.has(a.stop_id) ? seqMap.get(a.stop_id) : Infinity;
-                const ib = seqMap.has(b.stop_id) ? seqMap.get(b.stop_id) : Infinity;
-                return ia - ib;
-              });
-              return { ...courier, stops: [...completedStops, ...remainingReordered] };
-            });
-          }
+        if (action === 'accept' && rerouteStops) {
+          updatedCouriers = state.couriers.map(courier => {
+            if (courier.id !== vehicleId) return courier;
+            const completedStops = courier.stops.filter(s => s.status === 'completed');
+            return { ...courier, stops: [...completedStops, ...rerouteStops.map(s => {
+              const orig = courier.stops.find(c => String(c.stop_id) === s.stop_id);
+              return orig ?? s;
+            })] };
+          });
         }
 
-        return {
-          routes: updatedRoutes,
-          couriers: updatedCouriers,
-          pendingSuggestions: newPendingSuggestions
-        };
+        return { routes: updatedRoutes, couriers: updatedCouriers, pendingSuggestions: newPendingSuggestions };
       });
+
+      // Fix 1: After accept, send reroute to simulation so vehicle continues on new geometry
+      if (action === 'accept' && acceptedGeometry) {
+        const ws = get()._wsRef;
+        if (ws?.readyState === WebSocket.OPEN) {
+          const rerouteMsg = {
+            type: 'reroute',
+            courier_id: `courier-${vehicleId}`,
+            coordinates: acceptedGeometry.coordinates,
+            ...(rerouteStops && { stops: rerouteStops }),
+          };
+          ws.send(JSON.stringify(rerouteMsg));
+          console.log('[reroute sent]', rerouteMsg);
+        }
+      }
     } catch (error) {
       console.error(`Failed to ${action} suggestion:`, error);
       throw error;
