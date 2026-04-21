@@ -175,9 +175,9 @@ export const useRouteStore = create((set, get) => ({
       return;
     }
 
-    // Always fetch fresh stop IDs before starting simulation
-    if (!listenOnly) {
-      await get().forceFetchData();
+    // Only fetch if data hasn't been loaded yet — avoids deleting and recreating stop IDs mid-simulation
+    if (!listenOnly && !get().hasFetched) {
+      await get().fetchData();
     }
 
     const { routes } = get();
