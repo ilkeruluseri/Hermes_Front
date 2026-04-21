@@ -24,9 +24,10 @@ export default function Layout() {
             Dashboard
           </NavLink>
           
-          <NavLink 
-            to="/analytics" 
+          <NavLink
+            to="/analytics"
             className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+            onClick={(e) => { e.preventDefault(); window.location.href = '/analytics'; }}
           >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <line x1="18" y1="20" x2="18" y2="10"></line>

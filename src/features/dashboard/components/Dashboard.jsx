@@ -73,7 +73,7 @@ export default function Dashboard() {
             {isConnecting ? 'Starting…' : '▶ Start Live'}
           </button>
           <button
-            onClick={stopSimulation}
+            onClick={() => { stopSimulation(); window.location.reload(); }}
             disabled={!wsConnected && !isConnecting}
             className="ctrl-btn ctrl-btn--stop"
             style={{ opacity: (!wsConnected && !isConnecting) ? 0.5 : 1 }}
